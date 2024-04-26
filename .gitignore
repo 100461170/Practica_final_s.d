@@ -50,3 +50,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# archivo con estructura de datos
+data_structure/
+# archivos salida
+cliente
+servidor
+prueba_sec
