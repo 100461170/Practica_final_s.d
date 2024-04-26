@@ -16,12 +16,22 @@ class client :
     # ****************** ATTRIBUTES ******************
     _server = None
     _port = -1
+    _socket = None
 
     # ******************** METHODS *******************
 
 
     @staticmethod
     def  register(user) :
+        # mandar el codigo de operacion
+        message = b'register\0'
+        client._socket.sendall(message)
+        # mandar el usuario
+        message = user.encode("UTF-8")
+        client._socket.sendall(message)
+        # recibir la respuesta
+        message = client._socket.recv(1024)
+        print(message)
         
         return client.RC.ERROR
 
@@ -166,6 +176,7 @@ class client :
         parser.add_argument('-p', type=int, required=True, help='Server Port')
         args = parser.parse_args()
 
+
         if (args.s is None):
             parser.error("Usage: python3 client.py -s <server> -p <port>")
             return False
@@ -174,8 +185,8 @@ class client :
             parser.error("Error: Port must be in the range 1024 <= port <= 65535");
             return False
         
-        _server = args.s
-        _port = args.p
+        client._server = args.s
+        client._port = args.p
 
         return True
 
@@ -187,8 +198,12 @@ class client :
         if (not client.parseArguments(argv)) :
             client.usage()
             return
+        
 
         sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sever_addres = (client._server, client._port)
+        sc.connect(sever_addres)
+        client._socket = sc
         
         
         client.shell()

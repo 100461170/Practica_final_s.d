@@ -18,16 +18,19 @@
 
 
 #define MAX 256
-#define MAX_VECTOR 32
+#define MAX_SIZE 1024
 
 //structures used 
 
+struct file{
+    char name[MAX_SIZE];
+    char descr[MAX_SIZE];
+};
+
 
 struct tupla {
-    int clave;
-    char valor1[MAX];
-    int valor2_N;
-    double valor2_value[MAX_VECTOR];
+    char cliente[MAX];
+    struct file files[MAX];
 };
 
 int serverSocket(int port, int type);

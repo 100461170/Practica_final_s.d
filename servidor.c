@@ -115,53 +115,104 @@ void * tratar_peticion (void* pp){
     sync_copied = true;
     pthread_cond_signal(&sync_cond);
     pthread_mutex_unlock(&sync_mutex);
-    char num_op_str[MAX];
+    char operation[MAX];
     int resp;
     // recibir mensaje de codigo de operacion
-    int ret = recvMessage(sc_local, num_op_str, sizeof(char));
+    int ret = readLine(sc_local, operation, sizeof(char)*MAX);
     if (ret < 0){
         perror("Error en recepcion");
+        closeSocket(sc_local);
         return NULL;
     }
-    char *ending_char;
-    int num_op = strtol(num_op_str, &ending_char, 10);
 
+    int num_op = str2int(operation);
     // En funcion de la operacion especificada en la peticion hacemos una u otra operacion
     switch (num_op){
     case 0:
-        resp = s_init();
+        resp = s_register(sc_local);
         break;
-    case 1:
-        resp = s_set_value(sc_local);
-        break;
-    case 2:
-        resp = s_get_value(sc_local);
-        break;
-    case 3:
-        resp = s_modify_value(sc_local);
-        break;
-    case 4:
-        resp = s_delete_key(sc_local);
-        break;
-    case 5:
-        resp = s_exist(sc_local);
+    // case 1:
+    //     resp = s_unregister(sc_local);
+    //     break;
+    // case 2:
+    //     resp = s_connect(sc_local);
+    //     break;
+    // case 3:
+    //     resp = s_publish(sc_local);
+    //     break;
+    // case 4:
+    //     resp = s_delete(sc_local);
+    //     break;
+    // case 5:
+    //     resp = s_list_users(sc_local);
+    //     break;
+    // case 6:
+    //     resp = s_list_connect(sc_local);
+    //     break;
+    // case 7:
+    //     resp = s_disconnect(sc_local);
+    //     break;
+    // case 8:
+    //     resp = s_get_file(sc_local);
+    //     break;
+    default:
+        resp = -1;
         break;
     }
-    // devolvemos la respuesta solo si no es get value
+
+
+    // devolvemos la respuesta 
     char resp_str[MAX];
     sprintf(resp_str, "%d", resp);
-    if (resp != 2){
-        int ret = sendMessage(sc_local, resp_str, sizeof(resp_str));
-        if (ret == -1) {
-            perror("Error en envio");
-            exit(-1);
-        }
-    }  
+    ret = writeLine(sc_local, resp_str);
+    if (ret == -1) {
+        perror("Error en envio");
+        closeSocket(sc_local);
+        exit(-1);
+    }
+    
     closeSocket(sc_local);
     return NULL;
 }
 
-int s_init() {
+int s_register(int sc_local){
+    pthread_mutex_lock(&almacen_mutex);
+    puts("AQUI 1");
+    // recibir el usuario
+    char username[MAX];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        return 2;
+    }
+    printf("%s\n", username);
+    puts("AQUI 2");
+    // bucle para saber si usuario esta registrado
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen->cliente, username) == 0){
+            return 1;
+        }
+    }
+    puts("AQUI 3");
+    // comprobar el tamanio de almacen
+    if (n_elementos == max_tuplas){
+        // duplicar tamanio de almacen
+        almacen = realloc(almacen, 2 * max_tuplas * sizeof(struct tupla));
+        max_tuplas = max_tuplas * 2;
+    }
+    puts("AQUI 4");
+    // si no esta registrado se lo registra
+    struct tupla insert;
+    strcpy(insert.cliente, username);
+    almacen[n_elementos] = insert;
+    n_elementos++;
+    
+    pthread_mutex_unlock(&almacen_mutex);
+    return 0;
+}
+
+/* int s_init() {
     // mutex lock
     pthread_mutex_lock(&almacen_mutex);
     free(almacen);
@@ -182,7 +233,7 @@ int s_set_value(int sc_local){
     char c_key[MAX];
     char valor1[MAX];
     char c_valor2_N[MAX];
-    char c_valor2_value[MAX_VECTOR];
+    char c_valor2_value[MAX_SIZE];
     // recibir key
     ret = recvMessage(sc_local, c_key, sizeof(char) * MAX);
     if (ret == -1) {
@@ -212,7 +263,7 @@ int s_set_value(int sc_local){
     // N_value2
     int valor2_N = strtol(c_valor2_N, &ending_char, 10);
     // recibir V_value2
-    double valor2_value[MAX_VECTOR];
+    double valor2_value[MAX_SIZE];
     for (int i = 0; i < valor2_N; i++){
         ret = recvMessage(sc_local, c_valor2_value, sizeof(char) * MAX);
         if (ret == -1){
@@ -266,7 +317,7 @@ int s_get_value(int sc_local){
     char c_key[MAX];
     char valor1[MAX];
     int valor2_N;
-    double valor2_value[MAX_VECTOR];
+    double valor2_value[MAX_SIZE];
     // recibir key
     ret = recvMessage(sc_local, c_key, sizeof(char) * MAX);
     if (ret == -1) {
@@ -343,7 +394,7 @@ int s_modify_value(int sc_local){
     char c_key[MAX];
     char valor1[MAX];
     char c_valor2_N[MAX];
-    char c_valor2_value[MAX_VECTOR];
+    char c_valor2_value[MAX_SIZE];
     // recibir key
     ret = recvMessage(sc_local, c_key, sizeof(char) * MAX);
     if (ret == -1) {
@@ -373,7 +424,7 @@ int s_modify_value(int sc_local){
     // N_value2
     int valor2_N = strtol(c_valor2_N, &ending_char, 10);
     // recibir V_value2
-    double valor2_value[MAX_VECTOR];
+    double valor2_value[MAX_SIZE];
     for (int i = 0; i < valor2_N; i++){
         ret = recvMessage(sc_local, c_valor2_value, sizeof(char) * MAX);
         if (ret == -1){
@@ -466,7 +517,7 @@ int s_exist(int sc_local) {
     pthread_mutex_unlock(&almacen_mutex);
     // devolver existencia
     return existe;
-}
+} */
 
 void close_server(){
     // hacer el free y salir
@@ -544,4 +595,15 @@ int write_back(){
     }
     fclose(f);
     return 0;
+}
+
+int str2int(char *op){
+    const char *functions[] = {"register", "unregister", "connect", "publish", "delete",
+                                      "list_users", "list_connect", "disconnect", "get_file"};
+    for (long unsigned int i= 0; i < sizeof(functions); i++){
+        if (strcmp(op, functions[i])==0){
+            return i;
+        }
+    }
+    return -1;
 }
