@@ -12,12 +12,10 @@ class client :
         OK = 0
         ERROR = 1
         USER_ERROR = 2
-
     # ****************** ATTRIBUTES ******************
     _server = None
     _port = -1
     _socket = None
-
     # ******************** METHODS *******************
 
 
@@ -27,18 +25,37 @@ class client :
         message = b'register\0'
         client._socket.sendall(message)
         # mandar el usuario
-        message = user.encode("UTF-8")
+        cadena = user + '\0'
+        message = cadena.encode("UTF-8")
         client._socket.sendall(message)
         # recibir la respuesta
         message = client._socket.recv(1024)
-        print(message)
-        
+        message = message.decode('utf-8')[0]
+        if (int(message) == 0):
+            print("c> REGISTER OK")
+        elif (int(message) == 1):
+            print("c> USERNAME IN USE")
+        else:
+            print("c> REGISTER FAIL")
         return client.RC.ERROR
 
-   
+
     @staticmethod
     def  unregister(user) :
         #  Write your code here
+        message = b'unregister\0'
+        client._socket.sendall(message)
+        cadena = user + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket.sendall(message)
+        message = client._socket.recv(1024)
+        message = message.decode('utf-8')[0]
+        if (int(message) == 0):
+            print("c> UNREGISTER OK")
+        elif (int(message) == 1):
+            print("c> USER DOES NOT EXIST")
+        else:
+            print("c> UNREGISTER FAIL")
         return client.RC.ERROR
 
 
@@ -95,14 +112,24 @@ class client :
                     line[0] = line[0].upper()
 
                     if (line[0]=="REGISTER") :
-                        if (len(line) == 2) :
+                        if (len(line) == 2) :   
+                            sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sever_addres = (client._server, client._port)
+                            sc.connect(sever_addres)
+                            client._socket = sc
                             client.register(line[1])
+                            sc.close()
                         else :
                             print("Syntax error. Usage: REGISTER <userName>")
 
                     elif(line[0]=="UNREGISTER") :
                         if (len(line) == 2) :
+                            sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sever_addres = (client._server, client._port)
+                            sc.connect(sever_addres)
+                            client._socket = sc
                             client.unregister(line[1])
+                            sc.close()
                         else :
                             print("Syntax error. Usage: UNREGISTER <userName>")
 
@@ -198,14 +225,6 @@ class client :
         if (not client.parseArguments(argv)) :
             client.usage()
             return
-        
-
-        sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sever_addres = (client._server, client._port)
-        sc.connect(sever_addres)
-        client._socket = sc
-        
-        
         client.shell()
         print("+++ FINISHED +++")
     

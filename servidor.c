@@ -124,16 +124,16 @@ void * tratar_peticion (void* pp){
         closeSocket(sc_local);
         return NULL;
     }
-
     int num_op = str2int(operation);
     // En funcion de la operacion especificada en la peticion hacemos una u otra operacion
     switch (num_op){
     case 0:
         resp = s_register(sc_local);
         break;
-    // case 1:
-    //     resp = s_unregister(sc_local);
-    //     break;
+    case 1:
+        puts("entrando a unregister");
+        resp = s_unregister(sc_local);
+        break;
     // case 2:
     //     resp = s_connect(sc_local);
     //     break;
@@ -160,7 +160,7 @@ void * tratar_peticion (void* pp){
         break;
     }
 
-
+    puts("mandando respuesta");
     // devolvemos la respuesta 
     char resp_str[MAX];
     sprintf(resp_str, "%d", resp);
@@ -177,31 +177,27 @@ void * tratar_peticion (void* pp){
 
 int s_register(int sc_local){
     pthread_mutex_lock(&almacen_mutex);
-    puts("AQUI 1");
     // recibir el usuario
     char username[MAX];
     int ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
         closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
-    printf("%s\n", username);
-    puts("AQUI 2");
     // bucle para saber si usuario esta registrado
     for (int i = 0; i < n_elementos; i++){
         if (strcmp(almacen->cliente, username) == 0){
             return 1;
         }
     }
-    puts("AQUI 3");
     // comprobar el tamanio de almacen
     if (n_elementos == max_tuplas){
         // duplicar tamanio de almacen
         almacen = realloc(almacen, 2 * max_tuplas * sizeof(struct tupla));
         max_tuplas = max_tuplas * 2;
     }
-    puts("AQUI 4");
     // si no esta registrado se lo registra
     struct tupla insert;
     strcpy(insert.cliente, username);
@@ -211,6 +207,38 @@ int s_register(int sc_local){
     pthread_mutex_unlock(&almacen_mutex);
     return 0;
 }
+
+int s_unregister(int sc_local){
+    pthread_mutex_lock(&almacen_mutex);
+    // recibir el usuario
+    char username[MAX];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    // bucle para saber si usuario esta registrado
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen->cliente, username) == 0){
+                        // esto funciona si el orden de las tuplas no importa. Sino hay que cambiarlo
+            // copiar ultimo elemento del almacen al indice
+            almacen[i] = almacen[n_elementos-1];
+            // borrar ultimo elemento del almacen
+            struct tupla tupla_vacia;
+            memset(&tupla_vacia, 0, sizeof(struct tupla));
+            almacen[n_elementos-1] = tupla_vacia;
+            // bajar el numero de elementos
+            n_elementos--;
+            pthread_mutex_unlock(&almacen_mutex);
+            return 0;
+        }
+    }    
+    pthread_mutex_unlock(&almacen_mutex);
+    return 1;
+}
+
 
 /* int s_init() {
     // mutex lock
@@ -599,7 +627,7 @@ int write_back(){
 
 int str2int(char *op){
     const char *functions[] = {"register", "unregister", "connect", "publish", "delete",
-                                      "list_users", "list_connect", "disconnect", "get_file"};
+                                "list_users", "list_connect", "disconnect", "get_file"};
     for (long unsigned int i= 0; i < sizeof(functions); i++){
         if (strcmp(op, functions[i])==0){
             return i;
