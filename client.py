@@ -1,6 +1,7 @@
 from enum import Enum
 import argparse
 import socket
+import threading
 import sys
 
 class client :
@@ -15,7 +16,8 @@ class client :
     # ****************** ATTRIBUTES ******************
     _server = None
     _port = -1
-    _socket = None
+    _socket_client = None
+    _socket_connect = None
     # ******************** METHODS *******************
 
 
@@ -23,47 +25,85 @@ class client :
     def  register(user) :
         # mandar el codigo de operacion
         message = b'register\0'
-        client._socket.sendall(message)
+        client._socket_client.sendall(message)
         # mandar el usuario
         cadena = user + '\0'
         message = cadena.encode("UTF-8")
-        client._socket.sendall(message)
+        client._socket_client.sendall(message)
         # recibir la respuesta
-        message = client._socket.recv(1024)
-        message = message.decode('utf-8')[0]
+        message = client._socket_client.recv(1)
+        message = message.decode('utf-8')
         if (int(message) == 0):
             print("c> REGISTER OK")
+            return client.RC.OK
         elif (int(message) == 1):
             print("c> USERNAME IN USE")
+            return client.RC.USER_ERROR
         else:
             print("c> REGISTER FAIL")
-        return client.RC.ERROR
+            return client.RC.ERROR
 
 
     @staticmethod
     def  unregister(user) :
-        #  Write your code here
+        # mandar el codigo de operacion
         message = b'unregister\0'
-        client._socket.sendall(message)
+        client._socket_client.sendall(message)
+        # mandar el usuario
         cadena = user + '\0'
         message = cadena.encode("UTF-8")
-        client._socket.sendall(message)
-        message = client._socket.recv(1024)
-        message = message.decode('utf-8')[0]
+        client._socket_client.sendall(message)
+        # recibir la respuesta
+        message = client._socket_client.recv(1)
+        message = message.decode('utf-8')
         if (int(message) == 0):
             print("c> UNREGISTER OK")
+            return client.RC.OK
         elif (int(message) == 1):
             print("c> USER DOES NOT EXIST")
+            return client.RC.USER_ERROR
         else:
             print("c> UNREGISTER FAIL")
-        return client.RC.ERROR
+            return client.RC.ERROR
 
 
     
     @staticmethod
     def  connect(user) :
-        #  Write your code here
-        return client.RC.ERROR
+        # crear una tupla ip, puerto 0-> usar puerto libre 
+        connect_addr = (client._server, 0)
+        # crear socket
+        client._socket_connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client._socket_connect.bind(connect_addr)
+        # crear hilo
+        ip, port = client._socket_connect.getsockname()
+        th = threading.Thread(target=client.listen(user, ip, port))
+        # mandar codigo de operacion
+        message = b'connect\0'
+        client._socket_client.sendall(message)
+        # mandar nombre de usuario
+        cadena = user + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        # mandar puerto
+        cadena = str(port) + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        # recibir la respuesta
+        message = client._socket_client.recv(1)
+        message = message.decode('utf-8')
+        if (int(message) == 0):
+            print("c> CONNECT OK")
+            return client.RC.OK
+        elif (int(message) == 1):
+            print("c> CONNECT FAIL , USER DOES NOT EXIST")
+            return client.RC.USER_ERROR
+        elif (int(message) == 2):
+            print("c> USER ALREADY CONNECTED")
+            return client.RC.USER_ERROR
+        else:
+            print("c> CONNECT FAIL")
+            return client.RC.ERROR
 
 
     
@@ -96,6 +136,11 @@ class client :
     def  getfile(user,  remote_FileName,  local_FileName) :
         #  Write your code here
         return client.RC.ERROR
+    
+    def listen(user, ip, port):
+        client._socket_connect.listen()
+        
+        return client.RC.OK
 
     # *
     # **
@@ -116,7 +161,7 @@ class client :
                             sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                             sever_addres = (client._server, client._port)
                             sc.connect(sever_addres)
-                            client._socket = sc
+                            client._socket_client = sc
                             client.register(line[1])
                             sc.close()
                         else :
@@ -127,7 +172,7 @@ class client :
                             sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                             sever_addres = (client._server, client._port)
                             sc.connect(sever_addres)
-                            client._socket = sc
+                            client._socket_client = sc
                             client.unregister(line[1])
                             sc.close()
                         else :
@@ -135,7 +180,13 @@ class client :
 
                     elif(line[0]=="CONNECT") :
                         if (len(line) == 2) :
+                            sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sever_addres = (client._server, client._port)
+                            sc.connect(sever_addres)
+                            client._socket_client = sc
                             client.connect(line[1])
+                            sc.close()
+                            
                         else :
                             print("Syntax error. Usage: CONNECT <userName>")
                     
