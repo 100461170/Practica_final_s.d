@@ -144,21 +144,21 @@ void * tratar_peticion (void* pp){
     case 2:
         resp = s_connect(sc_local);
         break;
-    // case 3:
-    //     resp = s_publish(sc_local);
-    //     break;
-    // case 4:
-    //     resp = s_delete(sc_local);
-    //     break;
-    // case 5:
-    //     resp = s_list_users(sc_local);
-    //     break;
+    case 3:
+        resp = s_publish(sc_local);
+        break;
+    case 4:
+        resp = s_delete(sc_local);
+        break;
+    case 5:
+        resp = s_list_users(sc_local);
+        break;
     // case 6:
-    //     resp = s_list_connect(sc_local);
+    //     resp = s_list_content(int sc_local);
     //     break;
-    // case 7:
-    //     resp = s_disconnect(sc_local);
-    //     break;
+    case 7:
+        resp = s_disconnect(sc_local);
+        break;
     // case 8:
     //     resp = s_get_file(sc_local);
     //     break;
@@ -167,8 +167,9 @@ void * tratar_peticion (void* pp){
         break;
     }
 
-    // devolvemos la respuesta 
-    char resp_str[2];
+    // devolvemos la respuesta si no es list users o list connect
+    if (num_op != 5 || num_op != 6){
+        char resp_str[2];
     sprintf(resp_str, "%d", resp);
     ret = writeLine(sc_local, resp_str);
     if (ret == -1) {
@@ -176,6 +177,8 @@ void * tratar_peticion (void* pp){
         closeSocket(sc_local);
         exit(-1);
     }
+    }
+    
     
     closeSocket(sc_local);
     return NULL;
@@ -269,7 +272,15 @@ int s_connect(int sc_local){
         return 3;
     }
     int port_number = strtol(puerto_str, NULL, 10);
-    printf("puerto: %d\n", port_number);
+    // obtener nombre de usuario
+    char ip[MAX];
+    ret = readLine(sc_local, ip, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 3;
+    }
     // comprobar si existe el usuario
     int existe = 1;         // valor a devolver en el caso de que no existiese
     int index;
@@ -288,10 +299,231 @@ int s_connect(int sc_local){
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
+    // copiar valores
     almacen[index].conected = 1;
+    almacen[index].puerto = port_number;
+    strcpy(almacen[index].ip, ip);
     pthread_mutex_unlock(&almacen_mutex);
     return 0;
+}
+
+int s_publish(int sc_local){
+    pthread_mutex_lock(&almacen_mutex);
+    // obtener nombre de usuario
+    char username[MAX];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 4;
+    }
+    // obtener nombre archivo
+    char filename[MAX];
+    ret = readLine(sc_local, filename, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 4;
+    }
+    // obtener descripcion del archivo
+    char description[MAX];
+    ret = readLine(sc_local, description, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 4;
+    }
+    // comprobar si existe el usuario
+    int existe = 1;         // valor a devolver en el caso de que no existiese
+    int index;
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen[i].cliente, username) == 0){
+            existe = 0;
+            index = i;
         }
+    }
+    if (existe > 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        return existe;
+    }
+    // comprobar si el cliente no esta conectado
+    if (almacen[index].conected == 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    int file_counter = almacen[index].file_count;
+    // comprobar si el contenido ya ha sido publicado
+    for (int i = 0; i < file_counter; i++){
+        if (strcmp(almacen[index].files[i].name, filename) == 0){
+            pthread_mutex_unlock(&almacen_mutex);
+            return 3;
+        }
+    }
+    // insertar el contenido
+    strcpy(almacen[index].files[file_counter].name, filename);
+    strcpy(almacen[index].files[file_counter].descr, description);
+    almacen[index].file_count++;
+    pthread_mutex_unlock(&almacen_mutex);
+    return 0;
+}
+int s_delete(int sc_local){
+    pthread_mutex_lock(&almacen_mutex);
+    // obtener nombre de usuario
+    char username[MAX];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 4;
+    }
+    // obtener nombre archivo
+    char filename[MAX];
+    ret = readLine(sc_local, filename, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 4;
+    }
+    // comprobar si existe el usuario
+    int existe = 1;         // valor a devolver en el caso de que no existiese
+    int index;
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen[i].cliente, username) == 0){
+            existe = 0;
+            index = i;
+        }
+    }
+    if (existe > 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        return existe;
+    }
+    // comprobar si el cliente no esta conectado
+    if (almacen[index].conected == 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    // comprobar si el contenido no ha sido publicado
+    int file_counter = almacen[index].file_count;
+    int no_existe_fichero = 3;
+    int indice_fichero = 0;
+    for (int i = 0; i < file_counter; i++){
+        if (strcmp(almacen[index].files[i].name, filename) == 0){
+            no_existe_fichero = 0;
+            indice_fichero = i;
+        }
+    }
+    if (no_existe_fichero > 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        return no_existe_fichero;
+    }
+    // borrar fichero
+    struct file file_vacio;
+    memset(&file_vacio, 0, sizeof(struct file));
+    almacen[index].files[indice_fichero] = almacen[index].files[file_counter-1];
+    almacen[index].files[file_counter-1] = file_vacio;
+    almacen[index].file_count--;
+    pthread_mutex_unlock(&almacen_mutex);
+    return 0;
+}
+int s_list_users(int sc_local){
+    pthread_mutex_lock(&almacen_mutex);
+    // comprobar si hay clientes
+    int hay_clientes = 0;
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen[i].cliente, "") != 0){
+            hay_clientes = 1;
+        }
+    }
+    if (hay_clientes == 0){
+        int ret = writeLine(sc_local, "1\0");
+        if (ret == -1) {
+            pthread_mutex_unlock(&almacen_mutex);
+            return 3;
+        }
+    }
+    // sacar el numero de clientes conectados
+    int num_conectados = 0;
+    for (int i = 0; i < n_elementos; i++){
+        if (almacen[i].conected == 1){
+            num_conectados++;
+        }
+    }
+    // si no hay ninguno se manda un dos
+    if (num_conectados == 0){
+        int ret = writeLine(sc_local, "2\0");
+        if (ret == -1) {
+            pthread_mutex_unlock(&almacen_mutex);
+            return 3;
+        }
+    }
+    // mandar los clientes conectados
+    // mandar 0
+    int ret = writeLine(sc_local, "0\0");
+    if (ret == -1){
+        pthread_mutex_unlock(&almacen_mutex);
+        return 3;
+    }
+    // mandar numero de clientes
+    char connected_str[MAX];
+    sprintf(connected_str, "%d", num_conectados); 
+    ret = writeLine(sc_local, connected_str);
+        if (ret == -1) {
+            pthread_mutex_unlock(&almacen_mutex);
+            return 3;
+    }
+    // mandar info de cada cliente
+    for (int i = 0; i < n_elementos; i++){
+        if (almacen[i].conected == 1){
+            char envio[MAX_SIZE];
+            sprintf(envio, "%s %s %d\n", almacen[i].cliente, almacen[i].ip, almacen[i].puerto);
+            int ret = writeLine(sc_local, envio);
+            if (ret == -1) {
+                pthread_mutex_unlock(&almacen_mutex);
+                return 3;
+            }
+        }
+    }
+    pthread_mutex_unlock(&almacen_mutex);
+    return 0;
+}
+
+int s_disconnect(int sc_local){
+    pthread_mutex_lock(&almacen_mutex);
+    char username[MAX];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        closeSocket(sc_local);
+        pthread_mutex_unlock(&almacen_mutex);
+        return 3;
+    }
+    // comprobar si existe el usuario
+    int existe = 1;         // valor a devolver en el caso de que no existiese
+    int index;
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen[i].cliente, username) == 0){
+            existe = 0;
+            index = i;
+        }
+    }
+    if (existe > 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        return existe;
+    }
+    // comprobar si el cliente no esta conectado
+    if (almacen[index].conected == 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    almacen[index].conected = 0;
+    pthread_mutex_unlock(&almacen_mutex);
+    return 0;
+}
 
         /* int s_init() {
             // mutex lock

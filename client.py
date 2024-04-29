@@ -70,6 +70,7 @@ class client :
     
     @staticmethod
     def  connect(user) :
+        """TODO: preguntar si hay que enviar puerto y como funciona lo del thread."""
         # crear una tupla ip, puerto 0-> usar puerto libre 
         connect_addr = (client._server, 0)
         # crear socket
@@ -77,6 +78,7 @@ class client :
         client._socket_connect.bind(connect_addr)
         # crear hilo
         ip, port = client._socket_connect.getsockname()
+        # la logica del hilo no estoy segura como manejarla
         th = threading.Thread(target=client.listen(user, ip, port))
         # mandar codigo de operacion
         message = b'connect\0'
@@ -89,6 +91,10 @@ class client :
         cadena = str(port) + '\0'
         message = cadena.encode("UTF-8")
         client._socket_client.sendall(message)
+        # mandar ip
+        cadena = str(ip) + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
         message = message.decode('utf-8')
@@ -96,7 +102,7 @@ class client :
             print("c> CONNECT OK")
             return client.RC.OK
         elif (int(message) == 1):
-            print("c> CONNECT FAIL , USER DOES NOT EXIST")
+            print("c> CONNECT FAIL, USER DOES NOT EXIST")
             return client.RC.USER_ERROR
         elif (int(message) == 2):
             print("c> USER ALREADY CONNECTED")
@@ -109,28 +115,159 @@ class client :
     
     @staticmethod
     def  disconnect(user) :
-        #  Write your code here
-        return client.RC.ERROR
+        # mandar codigo de operacion
+        message = b'disconnect\0'
+        client._socket_client.sendall(message)
+        # mandar nombre de usuario
+        cadena = user + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        # recibir la respuesta
+        message = client._socket_client.recv(1)
+        message = message.decode('utf-8')
+        if (int(message) == 0):
+            print("c> DISCONNECT OK")
+            return client.RC.OK
+        elif (int(message) == 1):
+            print("c> DISCONNECT FAIL / USER DOES NOT EXIST")
+            return client.RC.USER_ERROR
+        elif (int(message) == 2):
+            print("c> DISCONNECT FAIL / USER NOT CONNECTED")
+            return client.RC.USER_ERROR
+        else:
+            print("c> DISCONNECT FAIL")
+            return client.RC.ERROR
 
     @staticmethod
-    def  publish(fileName,  description) :
-        #  Write your code here
-        return client.RC.ERROR
+    def  publish(user, fileName,  description) :
+        # mandar codigo de operacion
+        message = b'publish\0'
+        client._socket_client.sendall(message)
+        # mandar nombre de usuario
+        cadena = user + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        # mandar nombre de archivo
+        cadena = fileName + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        # mandar descripcion de archivo
+        cadena = description + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        
+        # recibir la respuesta
+        message = client._socket_client.recv(1)
+        message = message.decode('utf-8')
+        if (int(message) == 0):
+            print("c> PUBLISH OK")
+            return client.RC.OK
+        elif (int(message) == 1):
+            print("c> PUBLISH FAIL, USER DOES NOT EXIST")
+            return client.RC.USER_ERROR
+        elif (int(message) == 2):
+            print("c> PUBLISH FAIL, USER NOT CONNECTED")
+            return client.RC.USER_ERROR
+        elif (int(message) == 3):
+            print("c> PUBLISH FAIL, CONTENT ALREADY PUBLISHED")
+            return client.RC.USER_ERROR
+        else:
+            print("c> PUBLISH FAIL")
+            return client.RC.ERROR
 
     @staticmethod
-    def  delete(fileName) :
-        #  Write your code here
-        return client.RC.ERROR
+    def  delete(user, fileName) :
+        # mandar codigo de operacion
+        message = b'delete\0'
+        client._socket_client.sendall(message)
+        # mandar nombre de usuario
+        cadena = user + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        # mandar nombre de archivo
+        cadena = fileName + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        
+        # recibir la respuesta
+        message = client._socket_client.recv(1)
+        message = message.decode('utf-8')
+        if (int(message) == 0):
+            print("c> DELETE OK")
+            return client.RC.OK
+        elif (int(message) == 1):
+            print("c> DELETE FAIL, USER DOES NOT EXIST")
+            return client.RC.USER_ERROR
+        elif (int(message) == 2):
+            print("c> DELETE FAIL, USER NOT CONNECTED")
+            return client.RC.USER_ERROR
+        elif (int(message) == 3):
+            print("c> DELETE FAIL, CONTENT NOT PUBLISHED")
+            return client.RC.USER_ERROR
+        else:
+            print("c> DELETE FAIL")
+            return client.RC.ERROR
+
 
     @staticmethod
     def  listusers() :
-        #  Write your code here
-        return client.RC.ERROR
+        # mandar codigo de operacion
+        message = b'list_users\0'
+        client._socket_client.sendall(message)
+        # recibir la respuesta
+        message = client._socket_client.recv(1)
+        message = message.decode('utf-8')
+        if (int(message) == 0):
+            print("c> LIST_USERS OK")
+            # recibir numero de usuarios
+            message = client._socket_client.recv(2)
+            message = message.decode('utf-8')
+            # recibir la respuesta
+            message = client._socket_client.recv(2048)
+            message = message.decode('utf-8')
+            print(message[:-4]) # quitar el \n y \0
+            return client.RC.OK
+            
+        elif (int(message) == 1):
+            print("c> LIST_USERS FAIL , USER DOES NOT EXIST")
+            return client.RC.USER_ERROR
+        elif (int(message) == 2):
+            print("c> LIST_USERS FAIL , USER NOT CONNECTED")
+            return client.RC.USER_ERROR
+        else:
+            print("c> LIST_USERS FAIL")
+            return client.RC.ERROR
+
 
     @staticmethod
     def  listcontent(user) :
-        #  Write your code here
-        return client.RC.ERROR
+        # mandar codigo de operacion
+        message = b'delete\0'
+        client._socket_client.sendall(message)
+        # mandar nombre de usuario
+        cadena = user + '\0'
+        message = cadena.encode("UTF-8")
+        client._socket_client.sendall(message)
+        if (int(message) == 0):
+            print("c> LIST_CONTENT OK")
+            # recibir numero de usuarios
+            message = client._socket_client.recv(2)
+            message = message.decode('utf-8')
+            # recibir la respuesta
+            message = client._socket_client.recv(2048)
+            message = message.decode('utf-8')
+            print(message[:-4]) # quitar el \n y \0
+            return client.RC.OK
+            
+        elif (int(message) == 1):
+            print("c> LIST_USERS FAIL , USER DOES NOT EXIST")
+            return client.RC.USER_ERROR
+        elif (int(message) == 2):
+            print("c> LIST_USERS FAIL , USER NOT CONNECTED")
+            return client.RC.USER_ERROR
+        else:
+            print("c> LIST_USERS FAIL")
+            return client.RC.ERROR
 
     @staticmethod
     def  getfile(user,  remote_FileName,  local_FileName) :
@@ -147,7 +284,7 @@ class client :
     # * @brief Command interpreter for the client. It calls the protocol functions.
     @staticmethod
     def shell():
-
+        """TODO: refactorizar todos los sc. Solo se se puede"""
         while (True) :
             try :
                 command = input("c> ")
@@ -191,22 +328,37 @@ class client :
                             print("Syntax error. Usage: CONNECT <userName>")
                     
                     elif(line[0]=="PUBLISH") :
-                        if (len(line) >= 3) :
+                        if (len(line) >= 4) :
                             #  Remove first two words
-                            description = ' '.join(line[2:])
-                            client.publish(line[1], description)
+                            description = ' '.join(line[3:])
+                            sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sever_addres = (client._server, client._port)
+                            sc.connect(sever_addres)
+                            client._socket_client = sc
+                            client.publish(line[1], line[2], description)
+                            sc.close()
                         else :
-                            print("Syntax error. Usage: PUBLISH <fileName> <description>")
+                            print("Syntax error. Usage: PUBLISH <user> <fileName> <description>")
 
                     elif(line[0]=="DELETE") :
-                        if (len(line) == 2) :
-                            client.delete(line[1])
+                        if (len(line) == 3) :
+                            sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sever_addres = (client._server, client._port)
+                            sc.connect(sever_addres)
+                            client._socket_client = sc
+                            client.delete(line[1], line[2])
+                            sc.close()
                         else :
-                            print("Syntax error. Usage: DELETE <fileName>")
+                            print("Syntax error. Usage: DELETE <user> <fileName>")
 
                     elif(line[0]=="LIST_USERS") :
                         if (len(line) == 1) :
+                            sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sever_addres = (client._server, client._port)
+                            sc.connect(sever_addres)
+                            client._socket_client = sc
                             client.listusers()
+                            sc.close()
                         else :
                             print("Syntax error. Use: LIST_USERS")
 
@@ -218,7 +370,12 @@ class client :
 
                     elif(line[0]=="DISCONNECT") :
                         if (len(line) == 2) :
+                            sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sever_addres = (client._server, client._port)
+                            sc.connect(sever_addres)
+                            client._socket_client = sc
                             client.disconnect(line[1])
+                            sc.close()
                         else :
                             print("Syntax error. Usage: DISCONNECT <userName>")
 

@@ -13,7 +13,7 @@ int s_connect(int sc_local);
 int s_publish(int sc_local);
 int s_delete(int sc_local);
 int s_list_users(int sc_local);
-int s_list_connect(int sc_local);
+int s_list_content(int sc_local);
 int s_disconnect(int sc_local);
 int s_get_file(int sc_local);
 // int s_init();

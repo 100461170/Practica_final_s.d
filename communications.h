@@ -31,7 +31,10 @@ struct file{
 struct tupla {
     char cliente[MAX];
     struct file files[MAX];
+    int file_count;
     int conected;
+    char ip[MAX];
+    int puerto;
 };
 
 int serverSocket(int port, int type);
