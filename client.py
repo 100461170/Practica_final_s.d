@@ -97,10 +97,6 @@ class client :
         cadena = str(port) + '\0'
         message = cadena.encode("UTF-8")
         client._socket_client.sendall(message)
-        # mandar ip
-        cadena = str(ip) + '\0'
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
         message = message.decode('utf-8')
@@ -265,15 +261,21 @@ class client :
     def  listcontent(user) :
         # comprobar si el usuario no esta conectado
         if client._username == None:
-            print("c> LIST_CONTENT FAIL , USER NOT CONNECTED")
+            print("c> LIST_CONTENT FAIL , CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
         # mandar codigo de operacion
-        message = b'delete\0'
+        message = b'list_content\0'
+        client._socket_client.sendall(message)
+        # mandar nombre de usuario de quien realiza la operacion
+        message = client._username.encode('utf-8')
         client._socket_client.sendall(message)
         # mandar nombre de usuario
         cadena = user + '\0'
-        message = cadena.encode("UTF-8")
+        message = cadena.encode('utf-8')
         client._socket_client.sendall(message)
+        # recibir respuesta
+        message = client._socket_client.recv(1)
+        message = int(message.decode('utf-8'))
         if (int(message) == 0):
             print("c> LIST_CONTENT OK")
             # recibir numero de usuarios
@@ -282,14 +284,17 @@ class client :
             # recibir la respuesta
             message = client._socket_client.recv(2048)
             message = message.decode('utf-8')
-            print(message[:-4]) # quitar el \n y \0
+            print(message[:-2]) # quitar el \n y \0
             return client.RC.OK
             
-        elif (int(message) == 1):
+        elif (message == 1):
             print("c> LIST_CONTENT FAIL , USER DOES NOT EXIST")
             return client.RC.USER_ERROR
-        elif (int(message) == 2):
+        elif (message == 2):
             print("c> LIST_CONTENT FAIL , USER NOT CONNECTED")
+            return client.RC.USER_ERROR
+        elif (message == 3):
+            print("c> LIST_CONTENT FAIL , REMOTE USER DOES NOT EXIST")
             return client.RC.USER_ERROR
         else:
             print("c> LIST_CONTENT FAIL")
@@ -310,7 +315,6 @@ class client :
     # * @brief Command interpreter for the client. It calls the protocol functions.
     @staticmethod
     def shell():
-        """TODO: refactorizar todos los sc. Solo se se puede"""
         while (True) :
             client._socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sever_addres = (client._server, client._port)
@@ -374,7 +378,9 @@ class client :
 
                     elif(line[0]=="LIST_CONTENT") :
                         if (len(line) == 2) :
+                            client._socket_client.connect(sever_addres)
                             client.listcontent(line[1])
+                            client._socket_client.close()
                         else :
                             print("Syntax error. Usage: LIST_CONTENT <userName>")
 

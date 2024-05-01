@@ -23,8 +23,8 @@
 //structures used 
 
 struct file{
-    char name[MAX_SIZE];
-    char descr[MAX_SIZE];
+    char name[MAX];
+    char descr[MAX];
 };
 
 
@@ -32,7 +32,7 @@ struct tupla {
     char cliente[MAX];
     struct file files[MAX];
     int file_count;
-    int conected;
+    int connected;
     char ip[MAX];
     int puerto;
 };
