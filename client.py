@@ -4,6 +4,7 @@ import socket
 import threading
 import sys
 
+"""TODO: improve quiting mecanism in server and client"""
 
 class client :
 
@@ -331,6 +332,8 @@ class client :
             message = client._socket_client.recv(1024)
             message = message.decode('utf-8')
             ip, port = message.split(' ')
+            ip = ip.split('\0')[1]
+            port = int(port[:-1])
             # conectarse al socket de estas caracteristicas
             get_file_sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             get_file_sc.connect((ip, port))
@@ -339,20 +342,19 @@ class client :
             message = cadena.encode('utf-8')
             get_file_sc.sendall(message)
             # leer todo el archivo de respuesta
-            str_archivo = ""
-            try:
-                while True:
-                    message = get_file_sc.recv(1024)
-                    message = message.decode('utf-8')
-                    str_archivo += message
-            except Exception:
-                pass
+            message = ''
+            while True:
+                msg = get_file_sc.recv(1)
+                if (msg == b'\0'):
+                    break;
+                message += msg.decode()
             # escribir todo el archivo en local
             with open(local_FileName, "w+") as f:
-                f.write(str_archivo)
+                f.write(message)
                 f.close()
             # cerrar socket
             get_file_sc.close()
+            print("GET_FILE OK")
         elif message == 1:
             print("c> GET_FILE FAIL / FILE NOT EXIST")
             return client.RC.USER_ERROR
@@ -362,22 +364,24 @@ class client :
         
     @staticmethod
     def listen(user, ip, port):
-        print("empezo el thread!")
         try:
             client._socket_connect.listen()
             while client._socket_connect:
                 # aceptar conexion
-                client._socket_connect.accept()
+                conn, address = client._socket_connect.accept()
                 # recibir mensaje
-                message = client._socket_connect.recv(1024)
+                message = conn.recv(1024)
                 message = message.decode('utf-8')
                 # abir archivo pedido
                 str_archivo = ""
-                with open(message, "r") as f:
+                with open(message[:-1], "r") as f:
                     str_archivo += f.read()
                 # escribir contenido del archivo
                 str_archivo += '\0'
-                client._socket_connect.sendall(str_archivo)
+                str_archivo = str_archivo.encode("utf-8")
+                conn.send(str_archivo)
+                conn.close()
+                
         except Exception:
             pass
         # return client.RC.OK
@@ -474,9 +478,7 @@ class client :
 
                     elif(line[0]=="QUIT") :
                         if (len(line) == 1) :
-                            client._socket_connect.shutdown(socket.SHUT_RDWR)
-                            client._socket_connect.close()
-                            client._thread.join()
+                            
                             break
                         else :
                             print("Syntax error. Use: QUIT")
