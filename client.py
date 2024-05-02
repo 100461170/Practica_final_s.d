@@ -4,6 +4,7 @@ import socket
 import threading
 import sys
 
+
 class client :
 
     # ******************** TYPES *********************
@@ -88,9 +89,7 @@ class client :
         client._socket_connect.bind(connect_addr)
         # crear hilo
         ip, port = client._socket_connect.getsockname()
-        # la logica del hilo no estoy segura como manejarla
-        client._thread = threading.Thread(target=client.listen(user, ip, port))
-        client._thread.start()
+        client._thread = threading.Thread(target=client.listen, args=(user, ip, port))
         # mandar codigo de operacion
         message = b'connect\0'
         client._socket_client.sendall(message)
@@ -109,6 +108,7 @@ class client :
         if message == 0:
             print("c> CONNECT OK")
             client._username = username
+            client._thread.start()
             return client.RC.OK
         elif message == 1:
             print("c> CONNECT FAIL, USER DOES NOT EXIST")
@@ -135,11 +135,11 @@ class client :
         message = client._socket_client.recv(1)
         message = int(message.decode('utf-8'))
         if message == 0:
-            print("c> DISCONNECT OK")
             client._socket_connect.shutdown(socket.SHUT_RDWR)
             client._socket_connect.close()
             client._thread.join()
             client._username = None
+            print("c> DISCONNECT OK")
             return client.RC.OK
         elif message == 1:
             print("c> DISCONNECT FAIL / USER DOES NOT EXIST")
@@ -353,36 +353,33 @@ class client :
                 f.close()
             # cerrar socket
             get_file_sc.close()
-            
-                
-            
-            
         elif message == 1:
             print("c> GET_FILE FAIL / FILE NOT EXIST")
             return client.RC.USER_ERROR
         else:
             print("c> GET_FILE FAIL")
             return client.RC.ERROR
-    
+        
+    @staticmethod
     def listen(user, ip, port):
         print("empezo el thread!")
-        client._socket_connect.listen()
-        while True:
-            # aceptar conexion
-            client._socket_connect.accept()
-            # recibir mensaje
-            message = client._socket_connect.recv(1024)
-            message = message.decode('utf-8')
-            # abir archivo pedido
-            str_archivo = ""
-            with open(message, "r") as f:
-                str_archivo += f.read()
-            # escribir contenido del archivo
-            str_archivo += '\0'
-            client._socket_connect.sendall(str_archivo)
-        
-        
-        
+        try:
+            client._socket_connect.listen()
+            while client._socket_connect:
+                # aceptar conexion
+                client._socket_connect.accept()
+                # recibir mensaje
+                message = client._socket_connect.recv(1024)
+                message = message.decode('utf-8')
+                # abir archivo pedido
+                str_archivo = ""
+                with open(message, "r") as f:
+                    str_archivo += f.read()
+                # escribir contenido del archivo
+                str_archivo += '\0'
+                client._socket_connect.sendall(str_archivo)
+        except Exception:
+            pass
         # return client.RC.OK
 
     # *
@@ -477,6 +474,9 @@ class client :
 
                     elif(line[0]=="QUIT") :
                         if (len(line) == 1) :
+                            client._socket_connect.shutdown(socket.SHUT_RDWR)
+                            client._socket_connect.close()
+                            client._thread.join()
                             break
                         else :
                             print("Syntax error. Use: QUIT")
