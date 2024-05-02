@@ -16,9 +16,14 @@ class client :
     # ****************** ATTRIBUTES ******************
     _server = None
     _port = -1
+    # contiene el socket de la conexion cliente-servidor
     _socket_client = None
+    # contiene el socket del cliente conectado
     _socket_connect = None
+    # contiene el usuario del cliente conectado
     _username = None
+    # contiene el thread del usuario conectado
+    _thread = None
     # ******************** METHODS *******************
 
 
@@ -33,11 +38,11 @@ class client :
         client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
-        message = message.decode('utf-8')
-        if (int(message) == 0):
+        message = int(message.decode('utf-8'))
+        if message == 0:
             print("c> REGISTER OK")
             return client.RC.OK
-        elif (int(message) == 1):
+        elif message == 1:
             print("c> USERNAME IN USE")
             return client.RC.USER_ERROR
         else:
@@ -56,11 +61,11 @@ class client :
         client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
-        message = message.decode('utf-8')
-        if (int(message) == 0):
+        message = int(message.decode('utf-8'))
+        if message == 0:
             print("c> UNREGISTER OK")
             return client.RC.OK
-        elif (int(message) == 1):
+        elif message == 1:
             print("c> USER DOES NOT EXIST")
             return client.RC.USER_ERROR
         else:
@@ -84,7 +89,8 @@ class client :
         # crear hilo
         ip, port = client._socket_connect.getsockname()
         # la logica del hilo no estoy segura como manejarla
-        th = threading.Thread(target=client.listen(user, ip, port))
+        client._thread = threading.Thread(target=client.listen(user, ip, port))
+        client._thread.start()
         # mandar codigo de operacion
         message = b'connect\0'
         client._socket_client.sendall(message)
@@ -99,15 +105,15 @@ class client :
         client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
-        message = message.decode('utf-8')
-        if (int(message) == 0):
+        message = int(message.decode('utf-8'))
+        if message == 0:
             print("c> CONNECT OK")
             client._username = username
             return client.RC.OK
-        elif (int(message) == 1):
+        elif message == 1:
             print("c> CONNECT FAIL, USER DOES NOT EXIST")
             return client.RC.USER_ERROR
-        elif (int(message) == 2):
+        elif message == 2:
             print("c> USER ALREADY CONNECTED")
             return client.RC.USER_ERROR
         else:
@@ -127,17 +133,18 @@ class client :
         client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
-        message = message.decode('utf-8')
-        if (int(message) == 0):
+        message = int(message.decode('utf-8'))
+        if message == 0:
             print("c> DISCONNECT OK")
             client._socket_connect.shutdown(socket.SHUT_RDWR)
             client._socket_connect.close()
+            client._thread.join()
             client._username = None
             return client.RC.OK
-        elif (int(message) == 1):
+        elif message == 1:
             print("c> DISCONNECT FAIL / USER DOES NOT EXIST")
             return client.RC.USER_ERROR
-        elif (int(message) == 2):
+        elif message == 2:
             print("c> DISCONNECT FAIL / USER NOT CONNECTED")
             return client.RC.USER_ERROR
         else:
@@ -168,17 +175,17 @@ class client :
         
         # recibir la respuesta
         message = client._socket_client.recv(1)
-        message = message.decode('utf-8')
-        if (int(message) == 0):
+        message = int(message.decode('utf-8'))
+        if message == 0:
             print("c> PUBLISH OK")
             return client.RC.OK
-        elif (int(message) == 1):
+        elif message == 1:
             print("c> PUBLISH FAIL, USER DOES NOT EXIST")
             return client.RC.USER_ERROR
-        elif (int(message) == 2):
+        elif message == 2:
             print("c> PUBLISH FAIL, USER NOT CONNECTED")
             return client.RC.USER_ERROR
-        elif (int(message) == 3):
+        elif message == 3:
             print("c> PUBLISH FAIL, CONTENT ALREADY PUBLISHED")
             return client.RC.USER_ERROR
         else:
@@ -205,17 +212,17 @@ class client :
         
         # recibir la respuesta
         message = client._socket_client.recv(1)
-        message = message.decode('utf-8')
-        if (int(message) == 0):
+        message = int(message.decode('utf-8'))
+        if message == 0:
             print("c> DELETE OK")
             return client.RC.OK
-        elif (int(message) == 1):
+        elif message == 1:
             print("c> DELETE FAIL, USER DOES NOT EXIST")
             return client.RC.USER_ERROR
-        elif (int(message) == 2):
+        elif message == 2:
             print("c> DELETE FAIL, USER NOT CONNECTED")
             return client.RC.USER_ERROR
-        elif (int(message) == 3):
+        elif message == 3:
             print("c> DELETE FAIL, CONTENT NOT PUBLISHED")
             return client.RC.USER_ERROR
         else:
@@ -234,8 +241,8 @@ class client :
         client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
-        message = message.decode('utf-8')
-        if (int(message) == 0):
+        message = int(message.decode('utf-8'))
+        if message == 0:
             print("c> LIST_USERS OK")
             # recibir numero de usuarios
             message = client._socket_client.recv(2)
@@ -246,10 +253,10 @@ class client :
             print(message[:-4]) # quitar el \n y \0
             return client.RC.OK
             
-        elif (int(message) == 1):
+        elif message == 1:
             print("c> LIST_USERS FAIL , USER DOES NOT EXIST")
             return client.RC.USER_ERROR
-        elif (int(message) == 2):
+        elif message == 2:
             print("c> LIST_USERS FAIL , USER NOT CONNECTED")
             return client.RC.USER_ERROR
         else:
@@ -276,7 +283,7 @@ class client :
         # recibir respuesta
         message = client._socket_client.recv(1)
         message = int(message.decode('utf-8'))
-        if (int(message) == 0):
+        if message == 0:
             print("c> LIST_CONTENT OK")
             # recibir numero de usuarios
             message = client._socket_client.recv(2)
@@ -287,13 +294,13 @@ class client :
             print(message[:-2]) # quitar el \n y \0
             return client.RC.OK
             
-        elif (message == 1):
+        elif message == 1:
             print("c> LIST_CONTENT FAIL , USER DOES NOT EXIST")
             return client.RC.USER_ERROR
-        elif (message == 2):
+        elif message == 2:
             print("c> LIST_CONTENT FAIL , USER NOT CONNECTED")
             return client.RC.USER_ERROR
-        elif (message == 3):
+        elif message == 3:
             print("c> LIST_CONTENT FAIL , REMOTE USER DOES NOT EXIST")
             return client.RC.USER_ERROR
         else:
@@ -302,13 +309,81 @@ class client :
 
     @staticmethod
     def  getfile(user,  remote_FileName,  local_FileName) :
-        #  Write your code here
-        return client.RC.ERROR
+        # comprobar que el usuario esta registrado y conectado
+        if client._username == None:
+            print("c> GET_FILE , USER NOT CONNECTED")
+            return client.RC.USER_ERROR
+        # enviar la cadena de operacion
+        message = b'get_file\0'
+        client._socket_client.sendall(message)
+        # enviar el nombre del cliente
+        cadena = user + '\0'
+        message = cadena.encode('utf-8')
+        client._socket_client.sendall(message)
+        # enviar el nombre del archivo remoto
+        cadena = remote_FileName + '\0'
+        message = cadena.encode('utf-8')
+        client._socket_client.sendall(message)
+        # recibir respuesta
+        message = client._socket_client.recv(1)
+        message = int(message.decode('utf-8'))
+        if message == 0:
+            message = client._socket_client.recv(1024)
+            message = message.decode('utf-8')
+            ip, port = message.split(' ')
+            # conectarse al socket de estas caracteristicas
+            get_file_sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            get_file_sc.connect((ip, port))
+            # mandar el nombre del archivo
+            cadena = remote_FileName + '\0'
+            message = cadena.encode('utf-8')
+            get_file_sc.sendall(message)
+            # leer todo el archivo de respuesta
+            str_archivo = ""
+            try:
+                while True:
+                    message = get_file_sc.recv(1024)
+                    message = message.decode('utf-8')
+                    str_archivo += message
+            except Exception:
+                pass
+            # escribir todo el archivo en local
+            with open(local_FileName, "w+") as f:
+                f.write(str_archivo)
+                f.close()
+            # cerrar socket
+            get_file_sc.close()
+            
+                
+            
+            
+        elif message == 1:
+            print("c> GET_FILE FAIL / FILE NOT EXIST")
+            return client.RC.USER_ERROR
+        else:
+            print("c> GET_FILE FAIL")
+            return client.RC.ERROR
     
     def listen(user, ip, port):
+        print("empezo el thread!")
         client._socket_connect.listen()
+        while True:
+            # aceptar conexion
+            client._socket_connect.accept()
+            # recibir mensaje
+            message = client._socket_connect.recv(1024)
+            message = message.decode('utf-8')
+            # abir archivo pedido
+            str_archivo = ""
+            with open(message, "r") as f:
+                str_archivo += f.read()
+            # escribir contenido del archivo
+            str_archivo += '\0'
+            client._socket_connect.sendall(str_archivo)
         
-        return client.RC.OK
+        
+        
+        # return client.RC.OK
 
     # *
     # **
@@ -394,7 +469,9 @@ class client :
 
                     elif(line[0]=="GET_FILE") :
                         if (len(line) == 4) :
+                            client._socket_client.connect(sever_addres)
                             client.getfile(line[1], line[2], line[3])
+                            client._socket_client.close()
                         else :
                             print("Syntax error. Usage: GET_FILE <userName> <remote_fileName> <local_fileName>")
 

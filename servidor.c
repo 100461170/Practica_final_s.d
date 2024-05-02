@@ -166,16 +166,16 @@ void * tratar_peticion (void* pp){
     case 7:
         resp = s_disconnect(sc_local);
         break;
-    // case 8:
-    //     resp = s_get_file(sc_local);
-    //     break;
+    case 8:
+        resp = s_get_file(sc_local);
+        break;
     default:
         resp = -1;
         break;
     }
 
     // devolvemos la respuesta si no es list users o list_content
-    if (num_op != 5 && num_op != 6){
+    if (num_op != 5 && num_op != 6 && num_op != 8){
         char resp_str[2];
         sprintf(resp_str, "%d", resp);
         ret = writeLine(sc_local, resp_str);
@@ -508,7 +508,6 @@ int s_list_content(int sc_local){
     ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         writeLine(sc_local, "4\0");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
@@ -618,6 +617,86 @@ int s_disconnect(int sc_local){
         return 2;
     }
     almacen[index].connected = 0;
+    pthread_mutex_unlock(&almacen_mutex);
+    return 0;
+}
+
+int s_get_file(int sc_local){
+    pthread_mutex_lock(&almacen_mutex);
+    // obtener nombre de cliente
+    char client_name[MAX];
+    int ret = readLine(sc_local, client_name, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        writeLine(sc_local, "2\0");
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    // obtener el nombre del fichero remoto
+    char remote_file[MAX];
+    ret = readLine(sc_local, remote_file, sizeof(char) * MAX);
+    if (ret < 0){
+        perror("Error en recepcion");
+        writeLine(sc_local, "2\0");
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    // comprobar que exista el cliente
+    int existe = 2;         // valor a devolver en el caso de que no existiese
+    int index;
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen[i].cliente, client_name) == 0){
+            existe = 0;
+            index = i;
+        }
+    }
+    if (existe > 0){
+        pthread_mutex_unlock(&almacen_mutex);
+        writeLine(sc_local, "2\0");
+        return existe;
+    }
+    // comprobar que el cliente este conectado
+    if (almacen[index].connected == 0){
+        writeLine(sc_local, "2\0");
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    // comprobar que el archivo remoto existe
+    int existe_archivo = 1;
+    int numero_archivos = almacen[index].file_count;
+    for (int i = 0; i < numero_archivos; i++){
+        if (strcmp(remote_file, almacen[index].files[i].name)==0){
+            existe_archivo = 0;
+        }
+    }
+    if (existe_archivo > 0){
+        ret = writeLine(sc_local, "1\0");
+        if (ret < 0){
+            writeLine(sc_local, "2\0");
+            pthread_mutex_unlock(&almacen_mutex);
+            return 2;
+        }
+        pthread_mutex_unlock(&almacen_mutex);
+        return 1;
+    }
+
+    // mandar 0
+    ret = writeLine(sc_local, "0\0");
+    if (ret < 0){
+        writeLine(sc_local, "2\0");
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+    // mandar ip y puerto del cliente
+    char client_info[MAX_SIZE];
+    sprintf(client_info, "%s %d", almacen[index].ip, almacen[index].puerto);
+    ret = writeLine(sc_local, client_info);
+    if (ret < 0){
+        writeLine(sc_local, "2\0");
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
+    }
+
     pthread_mutex_unlock(&almacen_mutex);
     return 0;
 }
