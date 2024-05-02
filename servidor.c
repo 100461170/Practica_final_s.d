@@ -17,7 +17,6 @@
 #include <signal.h>
 
 
-// TODO: cambiar codigos de operacion cuando hay error
 
 // mutex para copiar la peticion recibida a una variable local
 pthread_mutex_t sync_mutex;
@@ -199,7 +198,6 @@ int s_register(int sc_local){
     int ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
@@ -235,7 +233,6 @@ int s_unregister(int sc_local){
     int ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
@@ -266,7 +263,6 @@ int s_connect(int sc_local){
     int ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
@@ -275,7 +271,6 @@ int s_connect(int sc_local){
     ret = readLine(sc_local, puerto_str, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
@@ -321,7 +316,6 @@ int s_publish(int sc_local){
     int ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -330,7 +324,6 @@ int s_publish(int sc_local){
     ret = readLine(sc_local, filename, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -339,7 +332,6 @@ int s_publish(int sc_local){
     ret = readLine(sc_local, description, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -383,7 +375,6 @@ int s_delete(int sc_local){
     int ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -392,7 +383,6 @@ int s_delete(int sc_local){
     ret = readLine(sc_local, filename, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -450,6 +440,7 @@ int s_list_users(int sc_local){
         int ret = writeLine(sc_local, "1\0");
         if (ret == -1) {
             pthread_mutex_unlock(&almacen_mutex);
+            writeLine(sc_local, "3\0");
             return 3;
         }
     }
@@ -465,6 +456,7 @@ int s_list_users(int sc_local){
         int ret = writeLine(sc_local, "2\0");
         if (ret == -1) {
             pthread_mutex_unlock(&almacen_mutex);
+            writeLine(sc_local, "3\0");
             return 3;
         }
     }
@@ -473,6 +465,7 @@ int s_list_users(int sc_local){
     int ret = writeLine(sc_local, "0\0");
     if (ret == -1){
         pthread_mutex_unlock(&almacen_mutex);
+        writeLine(sc_local, "3\0");
         return 3;
     }
     // mandar numero de clientes
@@ -491,6 +484,7 @@ int s_list_users(int sc_local){
             int ret = writeLine(sc_local, envio);
             if (ret == -1) {
                 pthread_mutex_unlock(&almacen_mutex);
+                writeLine(sc_local, "3\0");
                 return 3;
             }
         }
@@ -503,20 +497,19 @@ int s_list_content(int sc_local){
     // recibir el nombre de usuario que hace la operacion
     char operating_user[MAX];
     int ret = readLine(sc_local, operating_user, sizeof(char) * MAX);
-    if (ret < 0)
-    {
+    if (ret < 0) {
         perror("Error en recepcion");
-        closeSocket(sc_local);
+        writeLine(sc_local, "4\0");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
     // nombre de usuario
     char username[MAX];
     ret = readLine(sc_local, username, sizeof(char) * MAX);
-    if (ret < 0)
-    {
+    if (ret < 0){
         perror("Error en recepcion");
         closeSocket(sc_local);
+        writeLine(sc_local, "4\0");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -533,6 +526,7 @@ int s_list_content(int sc_local){
     if (existe > 0){
         int ret = writeLine(sc_local, "1\0");
         if (ret == -1) {
+            writeLine(sc_local, "4\0");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -541,6 +535,7 @@ int s_list_content(int sc_local){
     if (almacen[index].connected == 0){
         int ret = writeLine(sc_local, "2\0");
         if (ret == -1) {
+            writeLine(sc_local, "4\0");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -557,6 +552,7 @@ int s_list_content(int sc_local){
     if (existe2 > 0){
         int ret = writeLine(sc_local, "3\0");
         if (ret == -1){
+            writeLine(sc_local, "4\0");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -564,6 +560,7 @@ int s_list_content(int sc_local){
     // mandar 0
     ret = writeLine(sc_local, "0\0");
         if (ret == -1){
+            writeLine(sc_local, "4\0");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -573,6 +570,7 @@ int s_list_content(int sc_local){
     sprintf(file_count_str, "%d", file_count);
     ret = writeLine(sc_local, file_count_str);
     if (ret == -1){
+        writeLine(sc_local, "4\0");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -582,6 +580,7 @@ int s_list_content(int sc_local){
         sprintf(envio, "%s \"%s\" \n", almacen[index2].files[i].name, almacen[index2].files[i].descr);
         int ret = writeLine(sc_local, envio);
         if (ret == -1){
+            writeLine(sc_local, "4\0");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -597,7 +596,6 @@ int s_disconnect(int sc_local){
     int ret = readLine(sc_local, username, sizeof(char) * MAX);
     if (ret < 0){
         perror("Error en recepcion");
-        closeSocket(sc_local);
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
