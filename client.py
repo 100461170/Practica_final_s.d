@@ -3,6 +3,7 @@ import argparse
 import socket
 import threading
 import sys
+import zeep
 
 """TODO: improve quiting mecanism in server and client"""
 
@@ -31,9 +32,18 @@ class client :
 
     @staticmethod
     def  register(user) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # mandar el codigo de operacion
         message = b'register\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # mandar el usuario
         cadena = user + '\0'
         message = cadena.encode("UTF-8")
@@ -54,9 +64,18 @@ class client :
 
     @staticmethod
     def  unregister(user) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # mandar el codigo de operacion
         message = b'unregister\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # mandar el usuario
         cadena = user + '\0'
         message = cadena.encode("UTF-8")
@@ -78,6 +97,11 @@ class client :
     
     @staticmethod
     def  connect(user) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         """TODO: preguntar si hay que enviar ip y como funciona lo del thread."""
         # comprobar si usuario esta conectado
         if client._username != None:
@@ -94,6 +118,10 @@ class client :
         # mandar codigo de operacion
         message = b'connect\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # mandar nombre de usuario
         cadena = user + '\0'
         username = cadena
@@ -125,9 +153,18 @@ class client :
     
     @staticmethod
     def  disconnect(user) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # mandar codigo de operacion
         message = b'disconnect\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # mandar nombre de usuario
         cadena = user + '\0'
         message = cadena.encode("UTF-8")
@@ -154,6 +191,11 @@ class client :
 
     @staticmethod
     def  publish(fileName,  description) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> PUBLISH FAIL, CLIENT NOT CONNECTED")
@@ -161,6 +203,10 @@ class client :
         # mandar codigo de operacion
         message = b'publish\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # mandar nombre de usuario
         cadena = client._username
         message = cadena.encode("UTF-8")
@@ -195,6 +241,11 @@ class client :
 
     @staticmethod
     def  delete(fileName) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> DELETE FAIL, CLIENT NOT CONNECTED")
@@ -202,6 +253,10 @@ class client :
         # mandar codigo de operacion
         message = b'delete\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # mandar nombre de usuario
         cadena = client._username
         message = cadena.encode("UTF-8")
@@ -233,6 +288,11 @@ class client :
 
     @staticmethod
     def  listusers() :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> LIST_USERS FAIL , CLIENT NOT CONNECTED")
@@ -240,6 +300,10 @@ class client :
         # mandar codigo de operacion
         message = b'list_users\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # recibir la respuesta
         message = client._socket_client.recv(1)
         message = int(message.decode('utf-8'))
@@ -267,6 +331,11 @@ class client :
 
     @staticmethod
     def  listcontent(user) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> LIST_CONTENT FAIL , CLIENT NOT CONNECTED")
@@ -274,6 +343,10 @@ class client :
         # mandar codigo de operacion
         message = b'list_content\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # mandar nombre de usuario de quien realiza la operacion
         message = client._username.encode('utf-8')
         client._socket_client.sendall(message)
@@ -310,6 +383,11 @@ class client :
 
     @staticmethod
     def  getfile(user,  remote_FileName,  local_FileName) :
+        # obtener el tiempo de la operacion
+        wsdl_url = "http://localhost:8000/?wsdl"
+        soap = zeep.Client(wsdl=wsdl_url) 
+        result = soap.service.get_date_time()
+        result = ''.join(result)
         # comprobar que el usuario esta registrado y conectado
         if client._username == None:
             print("c> GET_FILE , USER NOT CONNECTED")
@@ -317,6 +395,10 @@ class client :
         # enviar la cadena de operacion
         message = b'get_file\0'
         client._socket_client.sendall(message)
+        # mandar la hora
+        result += '\0'
+        result = result.encode('utf-8')
+        client._socket_client.sendall(result)
         # enviar el nombre del cliente
         cadena = user + '\0'
         message = cadena.encode('utf-8')
