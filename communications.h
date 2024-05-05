@@ -3,6 +3,7 @@
 //
 
 #include <sys/types.h>
+#include "operaciones.h"
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -17,23 +18,22 @@
 
 
 
-#define MAX 256
 #define MAX_SIZE 1024
 
 //structures used 
 
 struct file{
-    char name[MAX];
-    char descr[MAX];
+    char name[MAX_STR];
+    char descr[MAX_STR];
 };
 
 
 struct tupla {
-    char cliente[MAX];
-    struct file files[MAX];
+    char cliente[MAX_STR];
+    struct file files[MAX_STR];
     int file_count;
     int connected;
-    char ip[MAX];
+    char ip[MAX_STR];
     int puerto;
 };
 

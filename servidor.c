@@ -3,6 +3,7 @@
 //
 #include "servidor.h"
 #include "communications.h"
+#include "operaciones.h"
 #include <mqueue.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -68,7 +69,7 @@ int main (int argc, char *argv[]){
     int contador = 0;
     // Inicializamos los hilos
     pthread_attr_t attr;
-    pthread_t thid[MAX];
+    pthread_t thid[MAX_STR];
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     // Inicializamos mutex y variable condicion
@@ -83,8 +84,8 @@ int main (int argc, char *argv[]){
         return 0;
     }
     // impirmir mensaje init
-    char machine[MAX];
-    int err = gethostname(machine, MAX);
+    char machine[MAX_STR];
+    int err = gethostname(machine, MAX_STR);
     if (err == -1){
         fprintf(stderr, "Error: no se pudo obtener el nombre del host.\n");
         return -1;
@@ -125,10 +126,27 @@ void * tratar_peticion (void* pp){
     sync_copied = true;
     pthread_cond_signal(&sync_cond);
     pthread_mutex_unlock(&sync_mutex);
-    char operation[MAX];
+    char operation[MAX_STR];
     int resp;
+    // crear host RPC
+    char *host;
+    host = getenv("IP_TUPLAS");
+    if (host == NULL){
+        fprintf(stderr, "Variable de entorno IP_TUPLA no definida.\n");
+        return NULL;
+    }
+    CLIENT *clnt;
+    enum clnt_stat retval_1;
+    int result_1;
+    struct operation_log op_log;
+    // iniciar RPC
+    clnt = clnt_create(host, RPC, RPCVER, "tcp");
+    if (clnt == NULL) {
+        clnt_pcreateerror(host);
+        return NULL;
+    }
     // recibir mensaje de codigo de operacion
-    int ret = readLine(sc_local, operation, sizeof(char)*MAX);
+    int ret = readLine(sc_local, operation, sizeof(char)*MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         closeSocket(sc_local);
@@ -140,44 +158,47 @@ void * tratar_peticion (void* pp){
         return NULL;
     }
     // recibir hora
-    char fecha_hora[MAX];
+    char fecha_hora[MAX_STR];
     // recibir mensaje de codigo de operacion
-    ret = readLine(sc_local, fecha_hora, sizeof(char) * MAX);
+    ret = readLine(sc_local, fecha_hora, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         closeSocket(sc_local);
         return NULL;
     }
-    printf("Date and time of operation: %s\n", fecha_hora);
+    // copiar usuario y operacion a estructura RPC
+    strcpy(op_log.operation, operation);
+    strcpy(op_log.date_time, fecha_hora);
+    // transformar codigo a numero
     int num_op = str2int(operation);
     // En funcion de la operacion especificada en la peticion hacemos una u otra operacion
     switch (num_op){
     case 0:
-        resp = s_register(sc_local);
+        resp = s_register(sc_local, &op_log);
         break;
     case 1:
-        resp = s_unregister(sc_local);
+        resp = s_unregister(sc_local, &op_log);
         break;
     case 2:
-        resp = s_connect(sc_local);
+        resp = s_connect(sc_local, &op_log);
         break;
     case 3:
-        resp = s_publish(sc_local);
+        resp = s_publish(sc_local, &op_log);
         break;
     case 4:
-        resp = s_delete(sc_local);
+        resp = s_delete(sc_local, &op_log);
         break;
     case 5:
         resp = s_list_users(sc_local);
         break;
     case 6:
-        resp = s_list_content(sc_local);
+        resp = s_list_content(sc_local, &op_log);
         break;
     case 7:
-        resp = s_disconnect(sc_local);
+        resp = s_disconnect(sc_local, &op_log);
         break;
     case 8:
-        resp = s_get_file(sc_local);
+        resp = s_get_file(sc_local, &op_log);
         break;
     default:
         resp = -1;
@@ -195,23 +216,28 @@ void * tratar_peticion (void* pp){
             exit(-1);
         }
     }
-    
-    
+    // mandar mensaje RPC
+    retval_1 = send_op_log_1(op_log, &result_1, clnt);
+    if (retval_1 != RPC_SUCCESS){
+        clnt_perror(clnt, "call failed");
+    }
+
     closeSocket(sc_local);
     return NULL;
 }
 
-int s_register(int sc_local){
+int s_register(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
     // recibir el usuario
-    char username[MAX];
-    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    char username[MAX_STR];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
     printf("register from %s\n", username);
+    strcpy(op_log->username, username);
     // bucle para saber si usuario esta registrado
     for (int i = 0; i < n_elementos; i++){
         if (strcmp(almacen->cliente, username) == 0){
@@ -236,17 +262,18 @@ int s_register(int sc_local){
     return 0;
 }
 
-int s_unregister(int sc_local){
+int s_unregister(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
     // recibir el usuario
-    char username[MAX];
-    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    char username[MAX_STR];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
     printf("unregister from %s\n", username);
+    strcpy(op_log->username, username);
     // bucle para saber si usuario esta registrado
     for (int i = 0; i < n_elementos; i++){
         if (strcmp(almacen[i].cliente, username) == 0){
@@ -266,19 +293,20 @@ int s_unregister(int sc_local){
     pthread_mutex_unlock(&almacen_mutex);
     return 1;
 }
-int s_connect(int sc_local){
+int s_connect(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
     // obtener nombre de usuario
-    char username[MAX];
-    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    char username[MAX_STR];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
+    strcpy(op_log->username, username);
     // obtener puerto
-    char puerto_str[MAX];
-    ret = readLine(sc_local, puerto_str, sizeof(char) * MAX);
+    char puerto_str[MAX_STR];
+    ret = readLine(sc_local, puerto_str, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
@@ -286,7 +314,7 @@ int s_connect(int sc_local){
     }
     int port_number = strtol(puerto_str, NULL, 10);
     // obtener ip
-    char ip[MAX];
+    char ip[MAX_STR];
     struct sockaddr_in client_addr;
     socklen_t size;
     size = sizeof(client_addr);
@@ -319,27 +347,29 @@ int s_connect(int sc_local){
     return 0;
 }
 
-int s_publish(int sc_local){
+int s_publish(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
     // obtener nombre de usuario
-    char username[MAX];
-    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    char username[MAX_STR];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
     // obtener nombre archivo
-    char filename[MAX];
-    ret = readLine(sc_local, filename, sizeof(char) * MAX);
+    char filename[MAX_STR];
+    ret = readLine(sc_local, filename, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
+    strcpy(op_log->username, username);
+    strcpy(op_log->file_name, filename);
     // obtener descripcion del archivo
-    char description[MAX];
-    ret = readLine(sc_local, description, sizeof(char) * MAX);
+    char description[MAX_STR];
+    ret = readLine(sc_local, description, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
@@ -378,24 +408,26 @@ int s_publish(int sc_local){
     pthread_mutex_unlock(&almacen_mutex);
     return 0;
 }
-int s_delete(int sc_local){
+int s_delete(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
     // obtener nombre de usuario
-    char username[MAX];
-    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    char username[MAX_STR];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
     // obtener nombre archivo
-    char filename[MAX];
-    ret = readLine(sc_local, filename, sizeof(char) * MAX);
+    char filename[MAX_STR];
+    ret = readLine(sc_local, filename, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
+    strcpy(op_log->username, username);
+    strcpy(op_log->file_name, filename);
     // comprobar si existe el usuario
     int existe = 1;         // valor a devolver en el caso de que no existiese
     int index;
@@ -479,7 +511,7 @@ int s_list_users(int sc_local){
         return 3;
     }
     // mandar numero de clientes
-    char connected_str[MAX];
+    char connected_str[MAX_STR];
     sprintf(connected_str, "%d", num_conectados); 
     ret = writeLine(sc_local, connected_str);
         if (ret == -1) {
@@ -502,11 +534,11 @@ int s_list_users(int sc_local){
     pthread_mutex_unlock(&almacen_mutex);
     return 0;
 }
-int s_list_content(int sc_local){
+int s_list_content(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
     // recibir el nombre de usuario que hace la operacion
-    char operating_user[MAX];
-    int ret = readLine(sc_local, operating_user, sizeof(char) * MAX);
+    char operating_user[MAX_STR];
+    int ret = readLine(sc_local, operating_user, sizeof(char) * MAX_STR);
     if (ret < 0) {
         perror("Error en recepcion");
         writeLine(sc_local, "4\0");
@@ -514,15 +546,15 @@ int s_list_content(int sc_local){
         return 4;
     }
     // nombre de usuario
-    char username[MAX];
-    ret = readLine(sc_local, username, sizeof(char) * MAX);
+    char username[MAX_STR];
+    ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         writeLine(sc_local, "4\0");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
-
+    strcpy(op_log->username, username);
     // comprobar si existe el usuario que opera
     int existe = 1; // valor a devolver en el caso de que no existiese
     int index;
@@ -575,7 +607,7 @@ int s_list_content(int sc_local){
         }
     // mandar el numero de archivos del usuario
     int file_count = almacen[index2].file_count;
-    char file_count_str[MAX];
+    char file_count_str[MAX_STR];
     sprintf(file_count_str, "%d", file_count);
     ret = writeLine(sc_local, file_count_str);
     if (ret == -1){
@@ -599,15 +631,16 @@ int s_list_content(int sc_local){
     return 0;
 }
 
-int s_disconnect(int sc_local){
+int s_disconnect(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
-    char username[MAX];
-    int ret = readLine(sc_local, username, sizeof(char) * MAX);
+    char username[MAX_STR];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
+    strcpy(op_log->username, username);
     // comprobar si existe el usuario
     int existe = 1;         // valor a devolver en el caso de que no existiese
     int index;
@@ -631,20 +664,21 @@ int s_disconnect(int sc_local){
     return 0;
 }
 
-int s_get_file(int sc_local){
+int s_get_file(int sc_local, operation_log *op_log){
     pthread_mutex_lock(&almacen_mutex);
     // obtener nombre de cliente
-    char client_name[MAX];
-    int ret = readLine(sc_local, client_name, sizeof(char) * MAX);
+    char client_name[MAX_STR];
+    int ret = readLine(sc_local, client_name, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         writeLine(sc_local, "2\0");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
+    strcpy(op_log->username, client_name);
     // obtener el nombre del fichero remoto
-    char remote_file[MAX];
-    ret = readLine(sc_local, remote_file, sizeof(char) * MAX);
+    char remote_file[MAX_STR];
+    ret = readLine(sc_local, remote_file, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
         writeLine(sc_local, "2\0");
@@ -726,7 +760,7 @@ void close_server()
 int load()
 {
     // obtener directorio
-    char cwd[MAX];
+    char cwd[MAX_STR];
     getcwd(cwd, sizeof(cwd));
     // crear directorio si no existe
     strcat(cwd, "/data_structure");
@@ -740,7 +774,7 @@ int load()
         mkdir(cwd, 0777);
     }
     // path del archivo
-    char file[MAX];
+    char file[MAX_STR];
     strcpy(file, cwd);
     strcat(file, "/almacen.txt");
     // abrir descriptor de fichero
@@ -774,7 +808,7 @@ int load()
 }
 int write_back(){
     // cerrar colas servidor
-    char file[MAX];
+    char file[MAX_STR];
     getcwd(file, sizeof(file));
     strcat(file, "/data_structure/almacen.txt");
     // abrir descriptor de archivo
