@@ -55,7 +55,8 @@ dkms.conf
 data_structure/
 # archivos salida
 cliente
-servidor
+servidor_cliente
+servidor_rpc
 prueba_sec
 .vscode
 venv/
