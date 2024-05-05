@@ -1,10 +1,10 @@
-const MAX = 256;
+const MAX_STR = 256;
 
 struct operation_log{
-    opaque username[MAX];
-    opaque operation[MAX];
-    opaque date_time[MAX];
-    opaque file_name[MAX];
+    opaque username[MAX_STR];
+    opaque operation[MAX_STR];
+    opaque date_time[MAX_STR];
+    opaque file_name[MAX_STR];
 };
 
 
