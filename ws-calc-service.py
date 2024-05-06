@@ -36,5 +36,8 @@ if __name__ == '__main__':
     logging.info("wsdl is at: http://localhost:8000/?wsdl")
 
     server = make_server('127.0.0.1', 8000, application)
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
 

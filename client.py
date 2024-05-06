@@ -5,7 +5,7 @@ import threading
 import sys
 import zeep
 
-"""TODO: improve quiting mecanism in server and client"""
+
 
 class client :
 
@@ -102,7 +102,6 @@ class client :
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
-        """TODO: preguntar si hay que enviar ip y como funciona lo del thread."""
         # comprobar si usuario esta conectado
         if client._username != None:
             print("c> CLIENT ALREADY CONNECTED")
@@ -173,6 +172,7 @@ class client :
         message = client._socket_client.recv(1)
         message = int(message.decode('utf-8'))
         if message == 0:
+            """TODO: improve thread killing mecanism"""
             client._socket_connect.shutdown(socket.SHUT_RDWR)
             client._socket_connect.close()
             client._thread.join()
@@ -428,7 +428,7 @@ class client :
             while True:
                 msg = get_file_sc.recv(1)
                 if (msg == b'\0'):
-                    break;
+                    break
                 message += msg.decode()
             # escribir todo el archivo en local
             with open(local_FileName, "w+") as f:
