@@ -19,6 +19,7 @@ class client :
     # ****************** ATTRIBUTES ******************
     _server = None
     _port = -1
+    _web_port = None
     # contiene el socket de la conexion cliente-servidor
     _socket_client = None
     # contiene el socket del cliente conectado
@@ -33,7 +34,7 @@ class client :
     @staticmethod
     def  register(user) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -65,7 +66,7 @@ class client :
     @staticmethod
     def  unregister(user) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -106,7 +107,7 @@ class client :
     @staticmethod
     def  connect(user) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -161,7 +162,7 @@ class client :
     @staticmethod
     def  disconnect(user) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -199,7 +200,7 @@ class client :
     @staticmethod
     def  publish(fileName,  description) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -249,7 +250,7 @@ class client :
     @staticmethod
     def  delete(fileName) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -296,7 +297,7 @@ class client :
     @staticmethod
     def  listusers() :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -339,7 +340,7 @@ class client :
     @staticmethod
     def  listcontent(user) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -391,7 +392,7 @@ class client :
     @staticmethod
     def  getfile(user,  remote_FileName,  local_FileName) :
         # obtener el tiempo de la operacion
-        wsdl_url = "http://localhost:8000/?wsdl"
+        wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         result = soap.service.get_date_time()
         result = ''.join(result)
@@ -594,6 +595,7 @@ class client :
         parser = argparse.ArgumentParser()
         parser.add_argument('-s', type=str, required=True, help='Server IP')
         parser.add_argument('-p', type=int, required=True, help='Server Port')
+        parser.add_argument('-ws', type=int, required=True, help='Server Port')
         args = parser.parse_args()
 
 
@@ -602,11 +604,15 @@ class client :
             return False
 
         if ((args.p < 1024) or (args.p > 65535)):
-            parser.error("Error: Port must be in the range 1024 <= port <= 65535");
+            parser.error("Error: Port must be in the range 1024 <= port <= 65535")
             return False
+        
+        if ((args.ws < 1024) or (args.ws > 65535)):
+            parser.error("Error: Port must be in the range 1024 <= port <= 65535")
         
         client._server = args.s
         client._port = args.p
+        client._web_port = args.ws
 
         return True
 
