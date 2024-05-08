@@ -77,13 +77,21 @@ class client :
         result = result.encode('utf-8')
         client._socket_client.sendall(result)
         # mandar el usuario
-        cadena = user + '\0'
-        message = cadena.encode("UTF-8")
+        username = user + '\0'
+        message = username.encode("UTF-8")
         client._socket_client.sendall(message)
         # recibir la respuesta
         message = client._socket_client.recv(1)
         message = int(message.decode('utf-8'))
         if message == 0:
+            # confirmar si es el usuario conectado
+            if username == client._username:
+                client._username = None
+                # matar el hilo
+                client._socket_connect.shutdown(socket.SHUT_RDWR)
+                client._socket_connect.close()
+                client._thread.join()
+            
             print("c> UNREGISTER OK")
             return client.RC.OK
         elif message == 1:
@@ -172,7 +180,6 @@ class client :
         message = client._socket_client.recv(1)
         message = int(message.decode('utf-8'))
         if message == 0:
-            """TODO: improve thread killing mecanism"""
             client._socket_connect.shutdown(socket.SHUT_RDWR)
             client._socket_connect.close()
             client._thread.join()
@@ -313,7 +320,7 @@ class client :
             message = client._socket_client.recv(2)
             message = message.decode('utf-8')
             # recibir la respuesta
-            message = client._socket_client.recv(2048)
+            message = client._socket_client.recv(1024)
             message = message.decode('utf-8')
             print(message[:-4]) # quitar el \n y \0
             return client.RC.OK
@@ -560,7 +567,11 @@ class client :
 
                     elif(line[0]=="QUIT") :
                         if (len(line) == 1) :
-                            
+                            """TODO: ask if this is correct."""
+                            if client._username != None:
+                                client._socket_client.connect(sever_addres)
+                                client.disconnect(client._username)
+                                client._thread.join()
                             break
                         else :
                             print("Syntax error. Use: QUIT")
