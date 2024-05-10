@@ -86,9 +86,15 @@ class client :
             # confirmar si es el usuario conectado
             if username == client._username:
                 client._username = None
-                # matar el hilo
-                client._socket_connect.shutdown(socket.SHUT_RDWR)
-                client._socket_connect.close()
+                # obtener IP y addr de socket connect y mandar mensaje de desconexion
+                ip, port = client._socket_connect.getsockname()
+                disconnect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                disconnect_socket.connect((ip, port))
+                end_message = "end" + "\0"
+                end_message = end_message.encode("utf-8")
+                disconnect_socket.sendall(end_message)
+                # client._socket_connect.shutdown(socket.SHUT_RDWR)
+                # client._socket_connect.close()
                 client._thread.join()
             
             print("c> UNREGISTER OK")
@@ -177,8 +183,15 @@ class client :
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
-            client._socket_connect.shutdown(socket.SHUT_RDWR)
-            client._socket_connect.close()
+            # obtener IP y addr de socket connect y mandar mensaje de desconexion
+            ip, port = client._socket_connect.getsockname()
+            disconnect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            disconnect_socket.connect((ip, port))
+            end_message = "end" + "\0"
+            end_message = end_message.encode("utf-8")
+            disconnect_socket.sendall(end_message)
+            # client._socket_connect.shutdown(socket.SHUT_RDWR)
+            # client._socket_connect.close()
             client._thread.join()
             client._username = None
             print("c> DISCONNECT OK")
@@ -308,10 +321,7 @@ class client :
         result = result.encode('utf-8')
         client._socket_client.sendall(result)
         # recibir la respuesta
-        message = int(client.readString(client._socket_client))
-        print(message)
-        
-        
+        message = int(client.readString(client._socket_client))        
         if message == 0:
             print("c> LIST_USERS OK")
             # recibir numero de usuarios
@@ -445,25 +455,28 @@ class client :
         
     @staticmethod
     def listen(user, ip, port):
-        try:
-            client._socket_connect.listen()
-            while client._socket_connect:
-                # aceptar conexion
-                conn, address = client._socket_connect.accept()
-                # recibir mensaje
-                message = client.readString(conn)
-                # abir archivo pedido
-                str_archivo = ""
-                with open(message, "r") as f:
-                    str_archivo += f.read()
-                # escribir contenido del archivo
-                str_archivo += '\0'
-                str_archivo = str_archivo.encode("utf-8")
-                conn.send(str_archivo)
+        
+        client._socket_connect.listen()
+        while client._socket_connect:
+            # aceptar conexion
+            conn, address = client._socket_connect.accept()
+            # recibir mensaje
+            message = client.readString(conn)
+            if message == "end":
                 conn.close()
-                
-        except Exception:
-            pass
+                client._socket_connect.shutdown(socket.SHUT_RDWR)
+                client._socket_connect.close()
+                break
+            # abir archivo pedido
+            str_archivo = ""
+            with open(message, "r") as f:
+                str_archivo += f.read()
+            # escribir contenido del archivo
+            str_archivo += '\0'
+            str_archivo = str_archivo.encode("utf-8")
+            conn.send(str_archivo)
+            conn.close()
+        
         # return client.RC.OK
 
     # *
@@ -514,7 +527,7 @@ class client :
                             client.publish(line[1], description)
                             client._socket_client.close()
                         else :
-                            print("Syntax error. Usage: PUBLISH <user> <fileName> <description>")
+                            print("Syntax error. Usage: PUBLISH <fileName> <description>")
 
                     elif(line[0]=="DELETE") :
                         if (len(line) == 2) :
@@ -561,8 +574,8 @@ class client :
                             """TODO: ask if this is correct."""
                             if client._username != None:
                                 client._socket_client.connect(sever_addres)
-                                client.disconnect(client._username)
-                                client._thread.join()
+                                client.disconnect(client._username[:-1])
+                                client._socket_client.close()
                             break
                         else :
                             print("Syntax error. Use: QUIT")

@@ -525,15 +525,15 @@ int s_list_users(int sc_local){
     // mandar info de cada cliente
     for (int i = 0; i < n_elementos; i++){
         if (almacen[i].connected == 1){
-            char envio[MAX_SIZE];
-            char envio2[MAX_SIZE];
-            char envio3[MAX_SIZE];
-            sprintf(envio, "%s", almacen[i].cliente);
-            sprintf(envio2, "%s", almacen[i].ip);
-            sprintf(envio3, "%d", almacen[i].puerto);
-            int ret = writeLine(sc_local, envio);
-            ret = writeLine(sc_local, envio2);
-            ret = writeLine(sc_local, envio3);
+            char cliente[MAX_SIZE];
+            char ip[MAX_SIZE];
+            char puerto[MAX_SIZE];
+            sprintf(cliente, "%s", almacen[i].cliente);
+            sprintf(ip, "%s", almacen[i].ip);
+            sprintf(puerto, "%d", almacen[i].puerto);
+            int ret = writeLine(sc_local, cliente);
+            ret = writeLine(sc_local, ip);
+            ret = writeLine(sc_local, puerto);
             if (ret == -1) {
                 pthread_mutex_unlock(&almacen_mutex);
                 writeLine(sc_local, "3");
@@ -627,12 +627,12 @@ int s_list_content(int sc_local, operation_log *op_log){
     }
     // enviar los archivos
     for (int i = 0; i < file_count; i++){
-        char envio[MAX_SIZE];
-        char envio2[MAX_SIZE];
-        sprintf(envio, "%s", almacen[index2].files[i].name);
-        sprintf(envio2, "\"%s\"", almacen[index2].files[i].descr);
-        int ret = writeLine(sc_local, envio);
-        ret = writeLine(sc_local, envio2);
+        char name[MAX_SIZE];
+        char descr[MAX_SIZE];
+        sprintf(name, "%s", almacen[index2].files[i].name);
+        sprintf(descr, "\"%s\"", almacen[index2].files[i].descr);
+        int ret = writeLine(sc_local, name);
+        ret = writeLine(sc_local, descr);
         if (ret == -1){
             writeLine(sc_local, "4");
             pthread_mutex_unlock(&almacen_mutex);
