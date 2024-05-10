@@ -479,10 +479,10 @@ int s_list_users(int sc_local){
         }
     }
     if (hay_clientes == 0){
-        int ret = writeLine(sc_local, "1\0");
+        int ret = writeLine(sc_local, "1");
         if (ret == -1) {
             pthread_mutex_unlock(&almacen_mutex);
-            writeLine(sc_local, "3\0");
+            writeLine(sc_local, "3");
             return 3;
         }
     }
@@ -495,38 +495,48 @@ int s_list_users(int sc_local){
     }
     // si no hay ninguno se manda un dos
     if (num_conectados == 0){
-        int ret = writeLine(sc_local, "2\0");
+        int ret = writeLine(sc_local, "2");
         if (ret == -1) {
             pthread_mutex_unlock(&almacen_mutex);
-            writeLine(sc_local, "3\0");
+            writeLine(sc_local, "3");
             return 3;
         }
     }
     // mandar los clientes conectados
     // mandar 0
-    int ret = writeLine(sc_local, "0\0");
+    int ret = writeLine(sc_local, "0");
     if (ret == -1){
         pthread_mutex_unlock(&almacen_mutex);
-        writeLine(sc_local, "3\0");
+        writeLine(sc_local, "3");
         return 3;
     }
+
+
     // mandar numero de clientes
     char connected_str[MAX_STR];
-    sprintf(connected_str, "%d", num_conectados); 
+    sprintf(connected_str, "%d", num_conectados);
     ret = writeLine(sc_local, connected_str);
         if (ret == -1) {
             pthread_mutex_unlock(&almacen_mutex);
             return 3;
     }
+
+
     // mandar info de cada cliente
     for (int i = 0; i < n_elementos; i++){
         if (almacen[i].connected == 1){
             char envio[MAX_SIZE];
-            sprintf(envio, "%s %s %d\n", almacen[i].cliente, almacen[i].ip, almacen[i].puerto);
+            char envio2[MAX_SIZE];
+            char envio3[MAX_SIZE];
+            sprintf(envio, "%s", almacen[i].cliente);
+            sprintf(envio2, "%s", almacen[i].ip);
+            sprintf(envio3, "%d", almacen[i].puerto);
             int ret = writeLine(sc_local, envio);
+            ret = writeLine(sc_local, envio2);
+            ret = writeLine(sc_local, envio3);
             if (ret == -1) {
                 pthread_mutex_unlock(&almacen_mutex);
-                writeLine(sc_local, "3\0");
+                writeLine(sc_local, "3");
                 return 3;
             }
         }
@@ -541,7 +551,7 @@ int s_list_content(int sc_local, operation_log *op_log){
     int ret = readLine(sc_local, operating_user, sizeof(char) * MAX_STR);
     if (ret < 0) {
         perror("Error en recepcion");
-        writeLine(sc_local, "4\0");
+        writeLine(sc_local, "4");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -550,7 +560,7 @@ int s_list_content(int sc_local, operation_log *op_log){
     ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
-        writeLine(sc_local, "4\0");
+        writeLine(sc_local, "4");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
@@ -565,18 +575,18 @@ int s_list_content(int sc_local, operation_log *op_log){
         }
     }
     if (existe > 0){
-        int ret = writeLine(sc_local, "1\0");
+        int ret = writeLine(sc_local, "1");
         if (ret == -1) {
-            writeLine(sc_local, "4\0");
+            writeLine(sc_local, "4");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
     }
     // comprobar si el usuario que realiza la op esta conectado
     if (almacen[index].connected == 0){
-        int ret = writeLine(sc_local, "2\0");
+        int ret = writeLine(sc_local, "2");
         if (ret == -1) {
-            writeLine(sc_local, "4\0");
+            writeLine(sc_local, "4");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -591,17 +601,17 @@ int s_list_content(int sc_local, operation_log *op_log){
         }
     }
     if (existe2 > 0){
-        int ret = writeLine(sc_local, "3\0");
+        int ret = writeLine(sc_local, "3");
         if (ret == -1){
-            writeLine(sc_local, "4\0");
+            writeLine(sc_local, "4");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
     }
     // mandar 0
-    ret = writeLine(sc_local, "0\0");
+    ret = writeLine(sc_local, "0");
         if (ret == -1){
-            writeLine(sc_local, "4\0");
+            writeLine(sc_local, "4");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -611,17 +621,20 @@ int s_list_content(int sc_local, operation_log *op_log){
     sprintf(file_count_str, "%d", file_count);
     ret = writeLine(sc_local, file_count_str);
     if (ret == -1){
-        writeLine(sc_local, "4\0");
+        writeLine(sc_local, "4");
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
     // enviar los archivos
     for (int i = 0; i < file_count; i++){
         char envio[MAX_SIZE];
-        sprintf(envio, "%s \"%s\" \n", almacen[index2].files[i].name, almacen[index2].files[i].descr);
+        char envio2[MAX_SIZE];
+        sprintf(envio, "%s", almacen[index2].files[i].name);
+        sprintf(envio2, "\"%s\"", almacen[index2].files[i].descr);
         int ret = writeLine(sc_local, envio);
+        ret = writeLine(sc_local, envio2);
         if (ret == -1){
-            writeLine(sc_local, "4\0");
+            writeLine(sc_local, "4");
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
@@ -671,7 +684,7 @@ int s_get_file(int sc_local, operation_log *op_log){
     int ret = readLine(sc_local, client_name, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
-        writeLine(sc_local, "2\0");
+        writeLine(sc_local, "2");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
@@ -681,7 +694,7 @@ int s_get_file(int sc_local, operation_log *op_log){
     ret = readLine(sc_local, remote_file, sizeof(char) * MAX_STR);
     if (ret < 0){
         perror("Error en recepcion");
-        writeLine(sc_local, "2\0");
+        writeLine(sc_local, "2");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
@@ -696,12 +709,12 @@ int s_get_file(int sc_local, operation_log *op_log){
     }
     if (existe > 0){
         pthread_mutex_unlock(&almacen_mutex);
-        writeLine(sc_local, "2\0");
+        writeLine(sc_local, "2");
         return existe;
     }
     // comprobar que el cliente este conectado
     if (almacen[index].connected == 0){
-        writeLine(sc_local, "2\0");
+        writeLine(sc_local, "2");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
@@ -714,9 +727,9 @@ int s_get_file(int sc_local, operation_log *op_log){
         }
     }
     if (existe_archivo > 0){
-        ret = writeLine(sc_local, "1\0");
+        ret = writeLine(sc_local, "1");
         if (ret < 0){
-            writeLine(sc_local, "2\0");
+            writeLine(sc_local, "2");
             pthread_mutex_unlock(&almacen_mutex);
             return 2;
         }
@@ -725,9 +738,9 @@ int s_get_file(int sc_local, operation_log *op_log){
     }
 
     // mandar 0
-    ret = writeLine(sc_local, "0\0");
+    ret = writeLine(sc_local, "0");
     if (ret < 0){
-        writeLine(sc_local, "2\0");
+        writeLine(sc_local, "2");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
@@ -736,7 +749,7 @@ int s_get_file(int sc_local, operation_log *op_log){
     sprintf(client_info, "%s %d", almacen[index].ip, almacen[index].puerto);
     ret = writeLine(sc_local, client_info);
     if (ret < 0){
-        writeLine(sc_local, "2\0");
+        writeLine(sc_local, "2");
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }

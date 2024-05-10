@@ -50,8 +50,7 @@ class client :
         message = cadena.encode("UTF-8")
         client._socket_client.sendall(message)
         # recibir la respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
             print("c> REGISTER OK")
             return client.RC.OK
@@ -82,8 +81,7 @@ class client :
         message = username.encode("UTF-8")
         client._socket_client.sendall(message)
         # recibir la respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
             # confirmar si es el usuario conectado
             if username == client._username:
@@ -140,8 +138,7 @@ class client :
         message = cadena.encode("UTF-8")
         client._socket_client.sendall(message)
         # recibir la respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
             print("c> CONNECT OK")
             client._username = username
@@ -178,8 +175,7 @@ class client :
         message = cadena.encode("UTF-8")
         client._socket_client.sendall(message)
         # recibir la respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
             client._socket_connect.shutdown(socket.SHUT_RDWR)
             client._socket_connect.close()
@@ -199,6 +195,7 @@ class client :
 
     @staticmethod
     def  publish(fileName,  description) :
+        """TODO: preguntar si puedo guardar paths absolutos"""
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
@@ -229,8 +226,7 @@ class client :
         client._socket_client.sendall(message)
         
         # recibir la respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
             print("c> PUBLISH OK")
             return client.RC.OK
@@ -275,8 +271,7 @@ class client :
         client._socket_client.sendall(message)
         
         # recibir la respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
             print("c> DELETE OK")
             return client.RC.OK
@@ -313,17 +308,21 @@ class client :
         result = result.encode('utf-8')
         client._socket_client.sendall(result)
         # recibir la respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
+        print(message)
+        
+        
         if message == 0:
             print("c> LIST_USERS OK")
             # recibir numero de usuarios
-            message = client._socket_client.recv(2)
-            message = message.decode('utf-8')
+            num_users = int(client.readString(client._socket_client))
             # recibir la respuesta
-            message = client._socket_client.recv(1024)
-            message = message.decode('utf-8')
-            print(message[:-4]) # quitar el \n y \0
+            for i in range(num_users):
+                message = []
+                for j in range(3):
+                    message.append(client.readString(client._socket_client))
+                
+                print(message[0], message[1], message[2]) # quitar el \n y \0
             return client.RC.OK
             
         elif message == 1:
@@ -363,17 +362,17 @@ class client :
         message = cadena.encode('utf-8')
         client._socket_client.sendall(message)
         # recibir respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
             print("c> LIST_CONTENT OK")
             # recibir numero de usuarios
-            message = client._socket_client.recv(2)
-            message = message.decode('utf-8')
-            # recibir la respuesta
-            message = client._socket_client.recv(2048)
-            message = message.decode('utf-8')
-            print(message[:-2]) # quitar el \n y \0
+            num_files = int(client.readString(client._socket_client))
+            for i in range(num_files):
+                # recibir la respuesta
+                message = []
+                for j in range(2):
+                    message.append(client.readString(client._socket_client))
+                print(message[0], message[1]) # quitar el \n y \0
             return client.RC.OK
             
         elif message == 1:
@@ -416,14 +415,11 @@ class client :
         message = cadena.encode('utf-8')
         client._socket_client.sendall(message)
         # recibir respuesta
-        message = client._socket_client.recv(1)
-        message = int(message.decode('utf-8'))
+        message = int(client.readString(client._socket_client))
         if message == 0:
-            message = client._socket_client.recv(1024)
-            message = message.decode('utf-8')
+            message = client.readString(client._socket_client)
             ip, port = message.split(' ')
-            ip = ip.split('\0')[1]
-            port = int(port[:-1])
+            port = int(port)
             # conectarse al socket de estas caracteristicas
             get_file_sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             get_file_sc.connect((ip, port))
@@ -432,12 +428,7 @@ class client :
             message = cadena.encode('utf-8')
             get_file_sc.sendall(message)
             # leer todo el archivo de respuesta
-            message = ''
-            while True:
-                msg = get_file_sc.recv(1)
-                if (msg == b'\0'):
-                    break
-                message += msg.decode()
+            message = client.readString(get_file_sc)
             # escribir todo el archivo en local
             with open(local_FileName, "w+") as f:
                 f.write(message)
@@ -460,11 +451,10 @@ class client :
                 # aceptar conexion
                 conn, address = client._socket_connect.accept()
                 # recibir mensaje
-                message = conn.recv(1024)
-                message = message.decode('utf-8')
+                message = client.readString(conn)
                 # abir archivo pedido
                 str_archivo = ""
-                with open(message[:-1], "r") as f:
+                with open(message, "r") as f:
                     str_archivo += f.read()
                 # escribir contenido del archivo
                 str_archivo += '\0'
@@ -580,6 +570,7 @@ class client :
                         print("Error: command " + line[0] + " not valid.")
             except Exception as e:
                 print("Exception: " + str(e))
+                
 
     # *
     # * @brief Prints program usage
@@ -615,6 +606,15 @@ class client :
         client._web_port = args.ws
 
         return True
+    
+    def readString(sock):
+        a = ''
+        while True:
+            msg = sock.recv(1)
+            if (msg == b'\0'):
+                break;
+            a += msg.decode()
+        return(a)
 
 
     # ******************** MAIN *********************
