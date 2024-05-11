@@ -69,20 +69,10 @@ class client :
         # mandar la hora
         client.send_message(time_date, client._socket_client)
         # mandar el usuario
-        username = client.send_message(user, client._socket_client)
+        client.send_message(user, client._socket_client)
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
-            # confirmar si es el usuario conectado
-            if username == client._username:
-                client._username = None
-                # obtener IP y addr de socket connect y mandar mensaje de desconexion
-                ip, port = client._socket_connect.getsockname()
-                disconnect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                disconnect_socket.connect((ip, port))
-                client.send_message("end", disconnect_socket)
-                client._thread.join()
-            
             print("c> UNREGISTER OK")
             return client.RC.OK
         elif message == 1:
@@ -112,7 +102,7 @@ class client :
         client._socket_connect.bind(connect_addr)
         # crear hilo
         ip, port = client._socket_connect.getsockname()
-        client._thread = threading.Thread(target=client.listen, args=(user, ip, port))
+        client._thread = threading.Thread(target=client.listen)
         # mandar codigo de operacion
         client.send_message("connect", client._socket_client)
         # mandar la hora
@@ -148,6 +138,10 @@ class client :
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
+        # comprobar si el usuario es el de esta sesion
+        if user != client._username:
+            print("c> DISCONNECT FAIL / USER NOT CONNECTED")
+            return client.RC.USER_ERROR
         # mandar codigo de operacion
         client.send_message("disconnect", client._socket_client)
         # mandar la hora
@@ -178,7 +172,6 @@ class client :
 
     @staticmethod
     def  publish(fileName,  description) :
-        """TODO: preguntar si puedo guardar paths absolutos"""
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
@@ -283,7 +276,7 @@ class client :
                 for j in range(3):
                     message.append(client.readString(client._socket_client))
                 
-                print(message[0], message[1], message[2]) # quitar el \n y \0
+                print(message[0], message[1], message[2])
             return client.RC.OK
             
         elif message == 1:
@@ -327,7 +320,7 @@ class client :
                 message = []
                 for j in range(2):
                     message.append(client.readString(client._socket_client))
-                print(message[0], message[1]) # quitar el \n y \0
+                print(message[0], message[1])
             return client.RC.OK
             
         elif message == 1:
@@ -390,7 +383,7 @@ class client :
             return client.RC.ERROR
         
     @staticmethod
-    def listen(user, ip, port):
+    def listen():
         
         client._socket_connect.listen()
         while client._socket_connect:

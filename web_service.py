@@ -6,7 +6,7 @@ from spyne import Application, ServiceBase, Integer, Unicode, rpc, Iterable
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 
-"""TODO: implement argument parser to pass port"""
+
 
 class Time(ServiceBase):
 
@@ -14,9 +14,7 @@ class Time(ServiceBase):
     def get_date_time(ctx):
         time = strftime("%d/%m/%Y %X", gmtime())
         return time
-    # @rpc(_returns=String)
-    # def get_time(ctx):
-    #      return a-b
+
 
 application = Application(
     services=[Time],
@@ -26,21 +24,7 @@ application = Application(
 
 application = WsgiApplication(application)
 
-# @staticmethod
-# def  parseArguments(argv, port) :
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('-p', type=int, required=True, help='Server Port')
-#     args = parser.parse_args()
 
-
-    
-    
-    
-
-#     return args.p
-# @staticmethod
-# def main(argv):
-#     return parseArguments(argv)
     
 if __name__ == '__main__':
     

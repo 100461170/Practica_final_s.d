@@ -205,7 +205,7 @@ void * tratar_peticion (void* pp){
         break;
     }
 
-    // devolvemos la respuesta si no es list users o list_content
+    // devolvemos la respuesta si no es list users, list_content o get_filefo
     if (num_op != 5 && num_op != 6 && num_op != 8){
         char resp_str[2];
         sprintf(resp_str, "%d", resp);
@@ -236,7 +236,6 @@ int s_register(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
-    printf("register from %s\n", username);
     strcpy(op_log->username, username);
     // bucle para saber si usuario esta registrado
     for (int i = 0; i < n_elementos; i++){
@@ -272,12 +271,15 @@ int s_unregister(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
-    printf("unregister from %s\n", username);
     strcpy(op_log->username, username);
     // bucle para saber si usuario esta registrado
     for (int i = 0; i < n_elementos; i++){
         if (strcmp(almacen[i].cliente, username) == 0){
-                        // esto funciona si el orden de las tuplas no importa. Sino hay que cambiarlo
+            // si el cliente esta conectado se devolvera error
+            if (almacen[i].connected > 0){
+                pthread_mutex_unlock(&almacen_mutex);
+                return 2;
+            }
             // copiar ultimo elemento del almacen al indice
             almacen[i] = almacen[n_elementos-1];
             // borrar ultimo elemento del almacen
@@ -313,14 +315,7 @@ int s_connect(int sc_local, operation_log *op_log){
         return 3;
     }
     int port_number = strtol(puerto_str, NULL, 10);
-    // obtener ip
-    char ip[MAX_STR];
-    struct sockaddr_in client_addr;
-    socklen_t size;
-    size = sizeof(client_addr);
-    getpeername(sc_local, (struct sockaddr *)&client_addr, (socklen_t *)&size);
-    strcpy(ip, inet_ntoa(client_addr.sin_addr));
-
+    
     // comprobar si existe el usuario
     int existe = 1;         // valor a devolver en el caso de que no existiese
     int index;
@@ -339,6 +334,15 @@ int s_connect(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
+
+    // obtener ip
+    char ip[MAX_STR];
+    struct sockaddr_in client_addr;
+    socklen_t size;
+    size = sizeof(client_addr);
+    getpeername(sc_local, (struct sockaddr *)&client_addr, (socklen_t *)&size);
+    strcpy(ip, inet_ntoa(client_addr.sin_addr));
+
     // copiar valores
     almacen[index].connected = 1;
     almacen[index].puerto = port_number;
