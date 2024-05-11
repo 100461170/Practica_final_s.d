@@ -36,19 +36,14 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # mandar el codigo de operacion
-        message = b'register\0'
-        client._socket_client.sendall(message)
+        client.send_message("register", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)        
         # mandar el usuario
-        cadena = user + '\0'
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(user, client._socket_client)     
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -67,19 +62,14 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # mandar el codigo de operacion
-        message = b'unregister\0'
-        client._socket_client.sendall(message)
+        client.send_message("unregister", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # mandar el usuario
-        username = user + '\0'
-        message = username.encode("UTF-8")
-        client._socket_client.sendall(message)
+        username = client.send_message(user, client._socket_client)
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -90,11 +80,7 @@ class client :
                 ip, port = client._socket_connect.getsockname()
                 disconnect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 disconnect_socket.connect((ip, port))
-                end_message = "end" + "\0"
-                end_message = end_message.encode("utf-8")
-                disconnect_socket.sendall(end_message)
-                # client._socket_connect.shutdown(socket.SHUT_RDWR)
-                # client._socket_connect.close()
+                client.send_message("end", disconnect_socket)
                 client._thread.join()
             
             print("c> UNREGISTER OK")
@@ -113,8 +99,8 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # comprobar si usuario esta conectado
         if client._username != None:
             print("c> CLIENT ALREADY CONNECTED")
@@ -128,21 +114,14 @@ class client :
         ip, port = client._socket_connect.getsockname()
         client._thread = threading.Thread(target=client.listen, args=(user, ip, port))
         # mandar codigo de operacion
-        message = b'connect\0'
-        client._socket_client.sendall(message)
+        client.send_message("connect", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # mandar nombre de usuario
-        cadena = user + '\0'
-        username = cadena
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        username = user
+        client.send_message(user, client._socket_client)
         # mandar puerto
-        cadena = str(port) + '\0'
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(str(port), client._socket_client)
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -167,19 +146,14 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # mandar codigo de operacion
-        message = b'disconnect\0'
-        client._socket_client.sendall(message)
+        client.send_message("disconnect", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # mandar nombre de usuario
-        cadena = user + '\0'
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(user, client._socket_client)
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -187,11 +161,7 @@ class client :
             ip, port = client._socket_connect.getsockname()
             disconnect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             disconnect_socket.connect((ip, port))
-            end_message = "end" + "\0"
-            end_message = end_message.encode("utf-8")
-            disconnect_socket.sendall(end_message)
-            # client._socket_connect.shutdown(socket.SHUT_RDWR)
-            # client._socket_connect.close()
+            client.send_message("end", disconnect_socket)
             client._thread.join()
             client._username = None
             print("c> DISCONNECT OK")
@@ -212,31 +182,22 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> PUBLISH FAIL, CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
         # mandar codigo de operacion
-        message = b'publish\0'
-        client._socket_client.sendall(message)
+        client.send_message("publish", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # mandar nombre de usuario
-        cadena = client._username
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(client._username, client._socket_client)
         # mandar nombre de archivo
-        cadena = fileName + '\0'
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(fileName, client._socket_client)
         # mandar descripcion de archivo
-        cadena = description + '\0'
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(description, client._socket_client)
         
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
@@ -261,27 +222,20 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> DELETE FAIL, CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
         # mandar codigo de operacion
-        message = b'delete\0'
-        client._socket_client.sendall(message)
+        client.send_message("delete", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # mandar nombre de usuario
-        cadena = client._username
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(client._username, client._socket_client)
         # mandar nombre de archivo
-        cadena = fileName + '\0'
-        message = cadena.encode("UTF-8")
-        client._socket_client.sendall(message)
+        client.send_message(fileName, client._socket_client)
         
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
@@ -307,19 +261,16 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> LIST_USERS FAIL , CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
         # mandar codigo de operacion
-        message = b'list_users\0'
-        client._socket_client.sendall(message)
+        client.send_message("list_users", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # recibir la respuesta
         message = int(client.readString(client._socket_client))        
         if message == 0:
@@ -351,26 +302,20 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # comprobar si el usuario no esta conectado
         if client._username == None:
             print("c> LIST_CONTENT FAIL , CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
         # mandar codigo de operacion
-        message = b'list_content\0'
-        client._socket_client.sendall(message)
+        client.send_message("list_content", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # mandar nombre de usuario de quien realiza la operacion
-        message = client._username.encode('utf-8')
-        client._socket_client.sendall(message)
+        client.send_message(client._username, client._socket_client)
         # mandar nombre de usuario
-        cadena = user + '\0'
-        message = cadena.encode('utf-8')
-        client._socket_client.sendall(message)
+        client.send_message(user, client._socket_client)
         # recibir respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -403,27 +348,20 @@ class client :
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
-        result = soap.service.get_date_time()
-        result = ''.join(result)
+        time_date = soap.service.get_date_time()
+        time_date = ''.join(time_date)
         # comprobar que el usuario esta registrado y conectado
         if client._username == None:
             print("c> GET_FILE , USER NOT CONNECTED")
             return client.RC.USER_ERROR
         # enviar la cadena de operacion
-        message = b'get_file\0'
-        client._socket_client.sendall(message)
+        client.send_message("get_file", client._socket_client)
         # mandar la hora
-        result += '\0'
-        result = result.encode('utf-8')
-        client._socket_client.sendall(result)
+        client.send_message(time_date, client._socket_client)
         # enviar el nombre del cliente
-        cadena = user + '\0'
-        message = cadena.encode('utf-8')
-        client._socket_client.sendall(message)
+        client.send_message(user, client._socket_client)
         # enviar el nombre del archivo remoto
-        cadena = remote_FileName + '\0'
-        message = cadena.encode('utf-8')
-        client._socket_client.sendall(message)
+        client.send_message(remote_FileName, client._socket_client)
         # recibir respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -434,9 +372,7 @@ class client :
             get_file_sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             get_file_sc.connect((ip, port))
             # mandar el nombre del archivo
-            cadena = remote_FileName + '\0'
-            message = cadena.encode('utf-8')
-            get_file_sc.sendall(message)
+            client.send_message(remote_FileName, get_file_sc)
             # leer todo el archivo de respuesta
             message = client.readString(get_file_sc)
             # escribir todo el archivo en local
@@ -471,10 +407,8 @@ class client :
             str_archivo = ""
             with open(message, "r") as f:
                 str_archivo += f.read()
-            # escribir contenido del archivo
-            str_archivo += '\0'
-            str_archivo = str_archivo.encode("utf-8")
-            conn.send(str_archivo)
+            # enviar contenido del archivo
+            client.send_message(str_archivo, conn)
             conn.close()
         
         # return client.RC.OK
@@ -629,6 +563,11 @@ class client :
             a += msg.decode()
         return(a)
 
+    def send_message(message, socket):
+        message+= "\0"
+        message = message.encode("utf-8")
+        socket.sendall(message)
+        return message
 
     # ******************** MAIN *********************
     @staticmethod
