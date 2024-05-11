@@ -476,12 +476,11 @@ int s_delete(int sc_local, operation_log *op_log){
 int s_list_users(int sc_local){
     pthread_mutex_lock(&almacen_mutex);
     // comprobar si hay clientes
-    int hay_clientes = 0;
-    for (int i = 0; i < n_elementos; i++){
-        if (strcmp(almacen[i].cliente, "") != 0){
-            hay_clientes = 1;
-        }
+    int hay_clientes = 1;
+    if (n_elementos == 0){
+        hay_clientes = 0;
     }
+    
     if (hay_clientes == 0){
         int ret = writeLine(sc_local, "1");
         if (ret == -1) {
