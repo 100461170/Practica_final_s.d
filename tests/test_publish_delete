@@ -1,0 +1,15 @@
+publish file1 descr1
+register user1
+publish file1 descr1
+connect user1
+publish file1 descr1
+publish file1 descr2
+disconnect user1
+delete file1
+connect user1
+delete file2
+delete file1
+disconnect user1
+delete file1
+unregister user1
+quit

@@ -1,0 +1,11 @@
+register user1
+register user2
+connect user3
+connect user1
+connect user2
+disconnect user3
+disconnect user2
+disconnect user1
+unregister user1
+unregister user2
+quit

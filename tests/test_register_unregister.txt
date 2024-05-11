@@ -1,0 +1,9 @@
+register user1
+register user2
+register user3
+register user1
+unregister user1
+unregister user2
+unregister user4
+unregister user3
+quit

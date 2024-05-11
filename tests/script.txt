@@ -1,0 +1,7 @@
+register cr7
+connect cr7
+publish /home/tomas/Desktop/test/hola.txt hola
+get_file cr7 /home/tomas/Desktop/test/hola.txt /home/tomas/Desktop/test/chao.txt
+disconnect cr7
+unregister cr7
+quit

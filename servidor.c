@@ -126,7 +126,7 @@ void * tratar_peticion (void* pp){
     sync_copied = true;
     pthread_cond_signal(&sync_cond);
     pthread_mutex_unlock(&sync_mutex);
-    char operation[MAX_STR];
+    char operation[MAX_STR] = "";
     int resp;
     // crear host RPC
     char *host;
@@ -139,6 +139,7 @@ void * tratar_peticion (void* pp){
     enum clnt_stat retval_1;
     int result_1;
     struct operation_log op_log;
+    memset(&op_log, 0, sizeof(struct operation_log));
     // iniciar RPC
     clnt = clnt_create(host, RPC, RPCVER, "tcp");
     if (clnt == NULL) {
@@ -153,7 +154,8 @@ void * tratar_peticion (void* pp){
         return NULL;
     }
     // por si recibe una cadena vacia
-    if (strcmp(operation, "")==0){
+    if (strcmp(operation, "") == 0){
+        fprintf(stderr, "Error: se obtuvo una operacion vacia.\n");
         closeSocket(sc_local);
         return NULL;
     }

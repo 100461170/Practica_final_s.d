@@ -86,15 +86,16 @@ class client :
     
     @staticmethod
     def  connect(user) :
+        # comprobar si usuario esta conectado
+        if client._username != None:
+            print("c> CLIENT ALREADY CONNECTED")
+            return client.RC.USER_ERROR
+       
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # comprobar si usuario esta conectado
-        if client._username != None:
-            print("c> CLIENT ALREADY CONNECTED")
-            return client.RC.USER_ERROR
         # crear una tupla ip, puerto 0-> usar puerto libre 
         connect_addr = (client._server, 0)
         # crear socket
@@ -133,15 +134,15 @@ class client :
     
     @staticmethod
     def  disconnect(user) :
+        # comprobar si el usuario es el de esta sesion
+        if user != client._username:
+            print("c> DISCONNECT FAIL / USER NOT CONNECTED")
+            return client.RC.USER_ERROR    
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # comprobar si el usuario es el de esta sesion
-        if user != client._username:
-            print("c> DISCONNECT FAIL / USER NOT CONNECTED")
-            return client.RC.USER_ERROR
         # mandar codigo de operacion
         client.send_message("disconnect", client._socket_client)
         # mandar la hora
@@ -172,15 +173,15 @@ class client :
 
     @staticmethod
     def  publish(fileName,  description) :
+        # comprobar si el usuario no esta conectado
+        if client._username == None:
+            print("c> PUBLISH FAIL, CLIENT NOT CONNECTED")
+            return client.RC.USER_ERROR
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # comprobar si el usuario no esta conectado
-        if client._username == None:
-            print("c> PUBLISH FAIL, CLIENT NOT CONNECTED")
-            return client.RC.USER_ERROR
         # mandar codigo de operacion
         client.send_message("publish", client._socket_client)
         # mandar la hora
@@ -212,15 +213,15 @@ class client :
 
     @staticmethod
     def  delete(fileName) :
+        # comprobar si el usuario no esta conectado
+        if client._username == None:
+            print("c> DELETE FAIL, CLIENT NOT CONNECTED")
+            return client.RC.USER_ERROR
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # comprobar si el usuario no esta conectado
-        if client._username == None:
-            print("c> DELETE FAIL, CLIENT NOT CONNECTED")
-            return client.RC.USER_ERROR
         # mandar codigo de operacion
         client.send_message("delete", client._socket_client)
         # mandar la hora
@@ -251,15 +252,15 @@ class client :
 
     @staticmethod
     def  listusers() :
+        # comprobar si el usuario no esta conectado
+        if client._username == None:
+            print("c> LIST_USERS FAIL , CLIENT NOT CONNECTED")
+            return client.RC.USER_ERROR
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # comprobar si el usuario no esta conectado
-        if client._username == None:
-            print("c> LIST_USERS FAIL , CLIENT NOT CONNECTED")
-            return client.RC.USER_ERROR
         # mandar codigo de operacion
         client.send_message("list_users", client._socket_client)
         # mandar la hora
@@ -292,15 +293,15 @@ class client :
 
     @staticmethod
     def  listcontent(user) :
+        # comprobar si el usuario no esta conectado
+        if client._username == None:
+            print("c> LIST_CONTENT FAIL , CLIENT NOT CONNECTED")
+            return client.RC.USER_ERROR
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # comprobar si el usuario no esta conectado
-        if client._username == None:
-            print("c> LIST_CONTENT FAIL , CLIENT NOT CONNECTED")
-            return client.RC.USER_ERROR
         # mandar codigo de operacion
         client.send_message("list_content", client._socket_client)
         # mandar la hora
@@ -338,15 +339,15 @@ class client :
 
     @staticmethod
     def  getfile(user,  remote_FileName,  local_FileName) :
+        # comprobar que el usuario esta registrado y conectado
+        if client._username == None:
+            print("c> GET_FILE , USER NOT CONNECTED")
+            return client.RC.USER_ERROR
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # comprobar que el usuario esta registrado y conectado
-        if client._username == None:
-            print("c> GET_FILE , USER NOT CONNECTED")
-            return client.RC.USER_ERROR
         # enviar la cadena de operacion
         client.send_message("get_file", client._socket_client)
         # mandar la hora
@@ -462,7 +463,7 @@ class client :
                             client.delete(line[1])
                             client._socket_client.close()
                         else :
-                            print("Syntax error. Usage: DELETE <user> <fileName>")
+                            print("Syntax error. Usage: DELETE <fileName>")
 
                     elif(line[0]=="LIST_USERS") :
                         if (len(line) == 1) :
@@ -501,7 +502,7 @@ class client :
                             """TODO: ask if this is correct."""
                             if client._username != None:
                                 client._socket_client.connect(sever_addres)
-                                client.disconnect(client._username[:-1])
+                                client.disconnect(client._username)
                                 client._socket_client.close()
                             break
                         else :
