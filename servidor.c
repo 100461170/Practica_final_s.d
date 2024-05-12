@@ -845,6 +845,7 @@ int write_back(){
 }
 
 int str2int(char *op){
+    // Función para transformar la cadena recibida en un número de operación
     const char *functions[] = {"register", "unregister", "connect", "publish", "delete",
                                 "list_users", "list_content", "disconnect", "get_file"};
     for (long unsigned int i= 0; i < sizeof(functions); i++){

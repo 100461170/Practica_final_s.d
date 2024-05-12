@@ -90,7 +90,6 @@ class client :
         if client._username != None:
             print("c> CLIENT ALREADY CONNECTED")
             return client.RC.USER_ERROR
-       
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
@@ -278,8 +277,7 @@ class client :
                     message.append(client.readString(client._socket_client))
                 
                 print(message[0], message[1], message[2])
-            return client.RC.OK
-            
+            return client.RC.OK         
         elif message == 1:
             print("c> LIST_USERS FAIL , USER DOES NOT EXIST")
             return client.RC.USER_ERROR
@@ -322,8 +320,7 @@ class client :
                 for j in range(2):
                     message.append(client.readString(client._socket_client))
                 print(message[0], message[1])
-            return client.RC.OK
-            
+            return client.RC.OK    
         elif message == 1:
             print("c> LIST_CONTENT FAIL , USER DOES NOT EXIST")
             return client.RC.USER_ERROR
@@ -385,7 +382,6 @@ class client :
         
     @staticmethod
     def listen():
-        
         client._socket_connect.listen()
         while client._socket_connect:
             # aceptar conexion
@@ -413,35 +409,40 @@ class client :
     @staticmethod
     def shell():
         while (True) :
+            # Crear el socket y almacenar los datos del servidor
             client._socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sever_addres = (client._server, client._port)
             try :
                 command = input("c> ")
                 line = command.split(" ")
                 if (len(line) > 0):
-
                     line[0] = line[0].upper()
-
                     if (line[0]=="REGISTER") :
-                        if (len(line) == 2) :   
+                        if (len(line) == 2) :
+                            # Conectarse al servidor   
                             client._socket_client.connect(sever_addres)
                             client.register(line[1])
+                            # Cerrar la conexión 
                             client._socket_client.close()
                         else :
                             print("Syntax error. Usage: REGISTER <userName>")
 
                     elif(line[0]=="UNREGISTER") :
                         if (len(line) == 2) :
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.unregister(line[1])
+                            # Cerrar la conexión
                             client._socket_client.close()
                         else :
                             print("Syntax error. Usage: UNREGISTER <userName>")
 
                     elif(line[0]=="CONNECT") :
                         if (len(line) == 2) :
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.connect(line[1])
+                            # Cerrar la conexión
                             client._socket_client.close()
                             
                         else :
@@ -449,60 +450,74 @@ class client :
                     
                     elif(line[0]=="PUBLISH") :
                         if (len(line) >= 3) :
-                            #  Remove first two words
+                            #  Eliminar las primeras dos palabras
                             description = ' '.join(line[2:])
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.publish(line[1], description)
+                            # Cerrar la conexión
                             client._socket_client.close()
                         else :
                             print("Syntax error. Usage: PUBLISH <fileName> <description>")
 
                     elif(line[0]=="DELETE") :
                         if (len(line) == 2) :
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.delete(line[1])
+                            # Cerrar la conexión
                             client._socket_client.close()
                         else :
                             print("Syntax error. Usage: DELETE <fileName>")
 
                     elif(line[0]=="LIST_USERS") :
                         if (len(line) == 1) :
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.listusers()
+                            # Cerrar la conexión
                             client._socket_client.close()
                         else :
                             print("Syntax error. Use: LIST_USERS")
 
                     elif(line[0]=="LIST_CONTENT") :
                         if (len(line) == 2) :
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.listcontent(line[1])
+                            # Cerrar la conexión
                             client._socket_client.close()
                         else :
                             print("Syntax error. Usage: LIST_CONTENT <userName>")
 
                     elif(line[0]=="DISCONNECT") :
                         if (len(line) == 2) :
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.disconnect(line[1])
+                            # Cerrar la conexión
                             client._socket_client.close()
                         else :
                             print("Syntax error. Usage: DISCONNECT <userName>")
 
                     elif(line[0]=="GET_FILE") :
                         if (len(line) == 4) :
+                            # Conectarse al servidor
                             client._socket_client.connect(sever_addres)
                             client.getfile(line[1], line[2], line[3])
+                            # Cerrar la conexión
                             client._socket_client.close()
                         else :
                             print("Syntax error. Usage: GET_FILE <userName> <remote_fileName> <local_fileName>")
 
                     elif(line[0]=="QUIT") :
                         if (len(line) == 1) :
-                            """TODO: ask if this is correct."""
+                            # Al hace QUIT se realiza un disconnect
                             if client._username != None:
+                                # Conectarse al servidor
                                 client._socket_client.connect(sever_addres)
                                 client.disconnect(client._username)
+                                # Cerrar la conexión
                                 client._socket_client.close()
                             break
                         else :
