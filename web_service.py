@@ -1,6 +1,7 @@
-import time
-from time import gmtime, strftime
+from time import strftime
+from datetime import datetime
 import argparse
+import pytz
 
 from spyne import Application, ServiceBase, Integer, Unicode, rpc, Iterable
 from spyne.protocol.soap import Soap11
@@ -12,8 +13,9 @@ class Time(ServiceBase):
     # funcion para obtener la fecha y hora
     @rpc(_returns=Iterable(Unicode))
     def get_date_time(ctx):
-        time = strftime("%d/%m/%Y %X", gmtime())
-        return time
+        spain_tz = pytz.timezone('Europe/Madrid')
+        spain_time = datetime.now(spain_tz).strftime("%d/%m/%Y %X")
+        return spain_time
 
 # reacion de la aplicacion usando soap
 application = Application(
