@@ -533,6 +533,15 @@ int s_list_users(int sc_local){
         - 2: si el usuario no esta conectado
         - 3: en cualquier otro caso de error*/
     pthread_mutex_lock(&almacen_mutex);
+    // obtener nombre de usuario
+    char username[MAX_STR];
+    int ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
+    // devolvemos 3 en caso de error
+    if (ret < 0){
+        perror("Error en recepcion");
+        pthread_mutex_unlock(&almacen_mutex);
+        return 3;
+    }
     // comprobar si hay clientes registrados en el sistema
     int hay_clientes = 1;
     if (n_elementos == 0){
@@ -540,7 +549,7 @@ int s_list_users(int sc_local){
     }
     // enviar un 1 si no hay clientes
     if (hay_clientes == 0){
-        int ret = writeLine(sc_local, "1");
+        ret = writeLine(sc_local, "1");
         if (ret == -1) {
             perror("Error mandando informacion");
             pthread_mutex_unlock(&almacen_mutex);
@@ -549,14 +558,27 @@ int s_list_users(int sc_local){
     }
     // Miramos el número de clientes conectados
     int num_conectados = 0;
+    int usuario_conectado = 1; // valor a devolver si el usuario pasado no es el conectado
     for (int i = 0; i < n_elementos; i++){
         if (almacen[i].connected == 1){
             num_conectados++;
         }
+        if (strcmp(almacen[i].cliente, username) == 0){
+            usuario_conectado = 0;
+        }
     }
     // enivar 2 si no hay clientes conectados
     if (num_conectados == 0){
-        int ret = writeLine(sc_local, "2");
+        ret = writeLine(sc_local, "2");
+        if (ret == -1) {
+            perror("Error mandando informacion");
+            pthread_mutex_unlock(&almacen_mutex);
+            return 3;
+        }
+    }
+    // enivar 1 si el cliente no esta conectado
+    if (usuario_conectado == 1){
+        ret = writeLine(sc_local, "1");
         if (ret == -1) {
             perror("Error mandando informacion");
             pthread_mutex_unlock(&almacen_mutex);
@@ -564,7 +586,7 @@ int s_list_users(int sc_local){
         }
     }
     // enviar 0 diciendo que hay clientes conectados
-    int ret = writeLine(sc_local, "0");
+    ret = writeLine(sc_local, "0");
     if (ret == -1){
         perror("Error mandando informacion");
         pthread_mutex_unlock(&almacen_mutex);

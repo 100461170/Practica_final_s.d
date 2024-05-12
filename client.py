@@ -169,9 +169,8 @@ class client :
             - 1 si el usuario no existe o no esta conectado
             - 2 en caso de error
         """
-        # comprobar si el cliente de esta sesion esta conectado al sistema. Si ya lo esta
-        # no se permitira una nueva conexion, ya que solo puede haber un usuario conectado
-        # por terminal
+        # comprobar si el usuario pasado de argumento es el usuario conectado
+        # no se permitira desconectar a usuarios de otras sesiones
         if user != client._username:
             print("c> DISCONNECT FAIL / USER NOT CONNECTED")
             return client.RC.USER_ERROR    
@@ -335,6 +334,8 @@ class client :
         client.send_message("list_users", client._socket_client)
         # mandar la hora
         client.send_message(time_date, client._socket_client)
+        # mandar nombre de usuario
+        client.send_message(client._username, client._socket_client)
         # recibir la respuesta
         message = int(client.readString(client._socket_client))        
         if message == 0:
