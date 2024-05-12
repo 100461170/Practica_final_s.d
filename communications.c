@@ -48,8 +48,6 @@ int serverAccept(int sd)
     struct sockaddr_in client_addr;
     socklen_t size;
 
-    printf("esperando conexion...\n");
-
     size = sizeof(client_addr);
     sc = accept(sd, (struct sockaddr *)&client_addr, (socklen_t *)&size);
     if (sc < 0)
@@ -57,9 +55,6 @@ int serverAccept(int sd)
         printf("Error en accept\n");
         return -1;
     }
-
-    printf("conexión aceptada de IP: %s y puerto: %d\n",
-           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
     return sc;
 }
