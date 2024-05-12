@@ -208,7 +208,7 @@ void * tratar_peticion (void* pp){
         resp = s_delete(sc_local, &op_log);
         break;
     case 5:
-        resp = s_list_users(sc_local);
+        resp = s_list_users(sc_local, &op_log);
         break;
     case 6:
         resp = s_list_content(sc_local, &op_log);
@@ -550,7 +550,7 @@ int s_delete(int sc_local, operation_log *op_log){
     return 0;
 }
 
-int s_list_users(int sc_local){
+int s_list_users(int sc_local, operation_log *op_log){
     /* Funcion list_users. Esta funcion permite listar los usuarios conectados
     en el sistema. La funcion devuelve:
         - 0: si la operacion es satisfactoria
@@ -569,6 +569,7 @@ int s_list_users(int sc_local){
     }
     // imprimir mensaje de operacion
     printf("s> operation from %s.\n", username);
+    strcpy(op_log->username, username);
     // comprobar si hay clientes registrados en el sistema
     int existe_usuario = 1;
     for (int i = 0; i < n_elementos; i++){
@@ -703,7 +704,7 @@ int s_list_content(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
-    strcpy(op_log->username, username);
+    strcpy(op_log->username, operating_user);
     // comprobar si existe el usuario que manda la operación
     int existe = 1; // valor a devolver en el caso de que no existiese
     int index;  // para poder acceder al usuario que manda la operacion rapidamente
