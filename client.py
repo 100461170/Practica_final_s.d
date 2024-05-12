@@ -365,9 +365,17 @@ class client :
             # mandar el nombre del archivo
             client.send_message(remote_FileName, get_file_sc)
             # leer todo el archivo de respuesta
-            message = client.readString(get_file_sc)
+            ret = int(client.readString(get_file_sc))
+            if ret == 1:
+                print("c> GET_FILE FAIL / FILE NOT EXIST")
+                return client.RC.USER_ERROR
+            if ret == 2:
+                print("c> GET_FILE FAIL")
+                return client.RC.ERROR
+            
+            message = client.readString_binary(get_file_sc)
             # escribir todo el archivo en local
-            with open(local_FileName, "w+") as f:
+            with open(local_FileName, "wb") as f:
                 f.write(message)
                 f.close()
             # cerrar socket
@@ -394,11 +402,17 @@ class client :
                 client._socket_connect.close()
                 break
             # abir archivo pedido
-            str_archivo = ""
-            with open(message, "r") as f:
-                str_archivo += f.read()
-            # enviar contenido del archivo
-            client.send_message(str_archivo, conn)
+            str_archivo = b""
+            try:
+                with open(message, "rb") as f:
+                    str_archivo += f.read()
+                # enviar contenido del archivo
+                client.send_message("0", conn)
+            except FileNotFoundError:
+                client.send_message("1", conn)
+            except Exception:
+                client.send_message("2", conn)
+            conn.sendall(str_archivo)
             conn.close()
         
         # return client.RC.OK
@@ -568,8 +582,17 @@ class client :
         while True:
             msg = sock.recv(1)
             if (msg == b'\0'):
-                break;
+                break
             a += msg.decode()
+        return(a)
+    
+    def readString_binary(sock):
+        a = b""
+        while True:
+            msg = sock.recv(1)
+            if not msg:
+                break
+            a += msg
         return(a)
 
     def send_message(message, socket):
