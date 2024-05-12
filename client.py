@@ -211,8 +211,20 @@ class client :
             return client.RC.ERROR
 
     @staticmethod
-    def  publish(fileName,  description) :
-        # comprobar si el usuario no esta conectado
+    def  publish(fileName,  description):
+        """
+        La funcion publish permite a un usuario publicar un fichero en el sistema
+        Args:
+            fileName: nombre del fichero
+            description: descripcion del fichero
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe, ya esta conectado o el contenido ya existe
+            - 2 en caso de error
+        """
+        # comprobar si el cliente de esta sesion esta conectado al sistema. Si ya lo esta
+        # no se permitira una nueva conexion, ya que solo puede haber un usuario conectado
+        # por terminal
         if client._username == None:
             print("c> PUBLISH FAIL, CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
@@ -231,7 +243,6 @@ class client :
         client.send_message(fileName, client._socket_client)
         # mandar descripcion de archivo
         client.send_message(description, client._socket_client)
-        
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -252,7 +263,18 @@ class client :
 
     @staticmethod
     def  delete(fileName) :
-        # comprobar si el usuario no esta conectado
+        """
+        La funcion delete permite a un usuario eliminar un fichero publicado en el sistema
+        Args:
+            fileName: nombre del fichero
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe o ya esta conectado o el contenido no existe
+            - 2 en caso de error
+        """
+        # comprobar si el cliente de esta sesion esta conectado al sistema. Si ya lo esta
+        # no se permitira una nueva conexion, ya que solo puede haber un usuario conectado
+        # por terminal
         if client._username == None:
             print("c> DELETE FAIL, CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
@@ -269,7 +291,6 @@ class client :
         client.send_message(client._username, client._socket_client)
         # mandar nombre de archivo
         client.send_message(fileName, client._socket_client)
-        
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
@@ -291,7 +312,16 @@ class client :
 
     @staticmethod
     def  listusers() :
-        # comprobar si el usuario no esta conectado
+        """
+        La funcion list_users permite a un usuario listar el numero de usuarios conectados en el sistema
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe o no esta conectado
+            - 2 en caso de error
+        """
+        # comprobar si el cliente de esta sesion esta conectado al sistema. Si ya lo esta
+        # no se permitira una nueva conexion, ya que solo puede haber un usuario conectado
+        # por terminal
         if client._username == None:
             print("c> LIST_USERS FAIL , CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
@@ -300,6 +330,7 @@ class client :
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
+        # todo: IMPORTANTE CAMBIAR ESTA FUNCION PARA ENVIAR EL NOMBRE DE USUARIO
         # mandar codigo de operacion
         client.send_message("list_users", client._socket_client)
         # mandar la hora
@@ -315,7 +346,7 @@ class client :
                 message = []
                 for j in range(3):
                     message.append(client.readString(client._socket_client))
-                
+                # Imprimir los usuarios en el shell
                 print(message[0], message[1], message[2])
             return client.RC.OK         
         elif message == 1:
@@ -331,7 +362,18 @@ class client :
 
     @staticmethod
     def  listcontent(user) :
-        # comprobar si el usuario no esta conectado
+        """
+        La funcion listcontent permite a un usuario mirar el contenido de otro usuario conectado en el sistema
+        Args:
+            user: nombre de usuario del que se quieren listar los contenidos
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe o no esta conectado o el usuario a buscar no existe
+            - 2 en caso de error
+        """
+        # comprobar si el cliente de esta sesion esta conectado al sistema. Si ya lo esta
+        # no se permitira una nueva conexion, ya que solo puede haber un usuario conectado
+        # por terminal
         if client._username == None:
             print("c> LIST_CONTENT FAIL , CLIENT NOT CONNECTED")
             return client.RC.USER_ERROR
@@ -359,6 +401,7 @@ class client :
                 message = []
                 for j in range(2):
                     message.append(client.readString(client._socket_client))
+                # imprimir los datos en la shell
                 print(message[0], message[1])
             return client.RC.OK    
         elif message == 1:
@@ -376,7 +419,20 @@ class client :
 
     @staticmethod
     def  getfile(user,  remote_FileName,  local_FileName) :
-        # comprobar que el usuario esta registrado y conectado
+        """
+        La funcion get_file permite a un usuario recibir un archivo de otro cliente
+        Args:
+            user: nombre de usuario del que cogeremos el fichero
+            remote_FileName: ruta del fichero a descargar
+            local_FileName: ruta donde se almacenará el fichero
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe o no esta conectado o el usurio remoto no existe o su contenido no existe
+            - 2 en caso de error
+        """
+        # comprobar si el cliente de esta sesion esta conectado al sistema. Si ya lo esta
+        # no se permitira una nueva conexion, ya que solo puede haber un usuario conectado
+        # por terminal
         if client._username == None:
             print("c> GET_FILE , USER NOT CONNECTED")
             return client.RC.USER_ERROR
@@ -385,6 +441,8 @@ class client :
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
+        # primero enviamos una serie de informacion al servidor para comprobar
+        # que todo es correcto y recibir la ip y el puerto del usuario remoto
         # enviar la cadena de operacion
         client.send_message("get_file", client._socket_client)
         # mandar la hora
@@ -396,15 +454,16 @@ class client :
         # recibir respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
+            # recibimos el puerto y la ip del usuario remoto
             message = client.readString(client._socket_client)
             ip, port = message.split(' ')
             port = int(port)
-            # conectarse al socket de estas caracteristicas
+            # conectarse al socket del otro usuario 
             get_file_sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             get_file_sc.connect((ip, port))
             # mandar el nombre del archivo
             client.send_message(remote_FileName, get_file_sc)
-            # leer todo el archivo de respuesta
+            # leer el valor de retorno
             ret = int(client.readString(get_file_sc))
             if ret == 1:
                 print("c> GET_FILE FAIL / FILE NOT EXIST")
@@ -412,18 +471,18 @@ class client :
             if ret == 2:
                 print("c> GET_FILE FAIL")
                 return client.RC.ERROR
-            
+            # leer el archivo de respuesta en binario
             message = client.readString_binary(get_file_sc)
             # escribir todo el archivo en local
             try:
                 with open(local_FileName, "wb") as f:
                     f.write(message)
                     f.close()
-                # cerrar socket
+            # tratar el error
             except Exception:
                 print("c> GET_FILE FAIL")
                 return client.RC.ERROR
-            
+            # cerrar el socket
             get_file_sc.close()
             print("GET_FILE OK")
         elif message == 1:
@@ -435,33 +494,43 @@ class client :
         
     @staticmethod
     def listen():
+        """
+        La funcion listen se utiliza en los hilos de escucha para mandar un archivo ante una peticion
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe o ya esta conectado o el contenido no existe
+            - 2 en caso de error
+        """
+        # escuchamos las peticiones
         client._socket_connect.listen()
         while client._socket_connect:
             # aceptar conexion
             conn, address = client._socket_connect.accept()
             # recibir mensaje
             message = client.readString(conn)
+            # cerramos el hilo si recibimos un end
             if message == "end":
                 conn.close()
                 client._socket_connect.shutdown(socket.SHUT_RDWR)
                 client._socket_connect.close()
                 break
-            # abir archivo pedido
+            # intentamos abrir el archivo pedido en binario
             str_archivo = b""
             try:
                 with open(message, "rb") as f:
+                    # leemos el archivo
                     str_archivo += f.read()
                 # enviar contenido del archivo
                 client.send_message("0", conn)
+            # devolvemos 1 si no se encuentra
             except FileNotFoundError:
                 client.send_message("1", conn)
+            # y devolvemos 2 si hay algun error
             except Exception:
                 client.send_message("2", conn)
             conn.sendall(str_archivo)
             conn.close()
         
-        # return client.RC.OK
-
     # *
     # **
     # * @brief Command interpreter for the client. It calls the protocol functions.
@@ -649,10 +718,11 @@ class client :
     # ******************** MAIN *********************
     @staticmethod
     def main(argv) :
-        
+        # si no se llama bien al cliente imprimimos como se usa
         if (not client.parseArguments(argv)) :
             client.usage()
             return
+        # llamamos a la shell
         client.shell()
         print("+++ FINISHED +++")
     
