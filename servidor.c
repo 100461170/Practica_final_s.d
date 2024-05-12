@@ -124,9 +124,9 @@ void * tratar_peticion (void* pp){
     pthread_mutex_lock(&sync_mutex);
     int sc_local = * (int*) pp;
     sync_copied = true;
+    char operation[MAX_STR] = "";
     pthread_cond_signal(&sync_cond);
     pthread_mutex_unlock(&sync_mutex);
-    char operation[MAX_STR] = "";
     int resp;
     // crear host RPC
     char *host;
@@ -155,7 +155,7 @@ void * tratar_peticion (void* pp){
     }
     // por si recibe una cadena vacia
     if (strcmp(operation, "") == 0){
-        fprintf(stderr, "Error: se obtuvo una operacion vacia.\n");
+        printf("Se obtuvo una operacion vacia.\n");
         closeSocket(sc_local);
         return NULL;
     }
