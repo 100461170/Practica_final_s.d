@@ -375,10 +375,15 @@ class client :
             
             message = client.readString_binary(get_file_sc)
             # escribir todo el archivo en local
-            with open(local_FileName, "wb") as f:
-                f.write(message)
-                f.close()
-            # cerrar socket
+            try:
+                with open(local_FileName, "wb") as f:
+                    f.write(message)
+                    f.close()
+                # cerrar socket
+            except Exception:
+                print("c> GET_FILE FAIL")
+                return client.RC.ERROR
+            
             get_file_sc.close()
             print("GET_FILE OK")
         elif message == 1:

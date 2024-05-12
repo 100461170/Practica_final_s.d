@@ -1,0 +1,12 @@
+get_file user1 prueba.txt copy_prueba.txt
+register user1
+get_file user1 prueba.txt copy_prueba.txt
+connect user1
+publish prueba.txt descr1
+get_file user1 prueba.txt copy_prueba.txt
+publish /dir/prueba.txt descr1
+get_file user1 /dir/prueba.txt file2
+get_file user1 prueba.txt /dir/copy_prueba.txt
+disconnect user1
+unregister user1
+quit
