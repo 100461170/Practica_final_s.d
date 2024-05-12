@@ -13,12 +13,15 @@ bool_t
 send_op_log_1_svc(struct operation_log op_log, int *result,  struct svc_req *rqstp)
 {
 	bool_t retval;
+	// transformar la cadena a mayusculas
 	for (int i = 0; i < sizeof(op_log.operation); i++){
 		op_log.operation[i] = toupper(op_log.operation[i]);
 	}
+	// imprimir el nombre de usuario, operacion, fecha y el nombre del fichero 
 	if (strcmp(op_log.operation, "PUBLISH") == 0 || strcmp(op_log.operation, "DELETE") == 0){
 		printf("%s %s %s %s \n", op_log.username, op_log.operation, op_log.file_name, op_log.date_time);
 	}
+	// imprimir el nombre de usuario, operacion y fecha
 	else{
 		printf("%s %s %s \n", op_log.username, op_log.operation, op_log.date_time);
 	}
