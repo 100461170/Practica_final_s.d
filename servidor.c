@@ -569,18 +569,22 @@ int s_list_users(int sc_local){
     // imprimir mensaje de operacion
     printf("operation from %s.\n", username);
     // comprobar si hay clientes registrados en el sistema
-    int hay_clientes = 1;
-    if (n_elementos == 0){
-        hay_clientes = 0;
+    int existe_usuario = 1;
+    for (int i = 0; i < n_elementos; i++){
+        if (strcmp(almacen->cliente, username) == 0){
+            existe_usuario = 0;
+        }
     }
-    // enviar un 1 si no hay clientes
-    if (hay_clientes == 0){
+    // enviar un 1 si no existe el usuario
+    if (existe_usuario == 1){
         ret = writeLine(sc_local, "1");
         if (ret == -1) {
             perror("Error mandando informacion");
             pthread_mutex_unlock(&almacen_mutex);
             return 3;
         }
+        pthread_mutex_unlock(&almacen_mutex);
+        return 1;
     }
     // Miramos el número de clientes conectados
     int num_conectados = 0;
@@ -601,6 +605,8 @@ int s_list_users(int sc_local){
             pthread_mutex_unlock(&almacen_mutex);
             return 3;
         }
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
     }
     // enivar 1 si el cliente no esta conectado
     if (usuario_conectado == 1){
@@ -610,6 +616,8 @@ int s_list_users(int sc_local){
             pthread_mutex_unlock(&almacen_mutex);
             return 3;
         }
+        pthread_mutex_unlock(&almacen_mutex);
+        return 1;
     }
     // enviar 0 diciendo que hay clientes conectados
     ret = writeLine(sc_local, "0");
@@ -706,12 +714,14 @@ int s_list_content(int sc_local, operation_log *op_log){
     }
     if (existe > 0){
         // si no existe devolvemos 1
-        int ret = writeLine(sc_local, "1");
+        ret = writeLine(sc_local, "1");
         // devolvemos 4 en caso de error
         if (ret == -1) {
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
+        pthread_mutex_unlock(&almacen_mutex);
+        return 1;
     }
     // comprobar si el usuario que realiza la operacion esta conectado
     // devolveremos 2 si no lo está y 4 en caso de error
@@ -721,6 +731,8 @@ int s_list_content(int sc_local, operation_log *op_log){
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
+        pthread_mutex_unlock(&almacen_mutex);
+        return 2;
     }
     // comprobar si existe el usuario del que queremos saber el contenido
     int existe2 = 3; // valor a devolver en el caso de que no existiese
@@ -740,6 +752,8 @@ int s_list_content(int sc_local, operation_log *op_log){
             pthread_mutex_unlock(&almacen_mutex);
             return 4;
         }
+        pthread_mutex_unlock(&almacen_mutex);
+        return 3;
     }
     // mandar un 0 en caso de exito
     ret = writeLine(sc_local, "0");
@@ -866,13 +880,21 @@ int s_get_file(int sc_local, operation_log *op_log){
     }
     // si no existe el usuario se envia un 2
     if (existe > 0){
+        ret = writeLine(sc_local, "2");
+        if (ret < 0){
+            pthread_mutex_unlock(&almacen_mutex);
+            return -1;
+        }
         pthread_mutex_unlock(&almacen_mutex);
-        writeLine(sc_local, "2");
-        return existe;
+        return 2;
     }
     // comprobar que el cliente este conectado
     if (almacen[index].connected == 0){
-        writeLine(sc_local, "2");
+        ret = writeLine(sc_local, "2");
+        if (ret < 0){
+            pthread_mutex_unlock(&almacen_mutex);
+            return -1;
+        }
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
