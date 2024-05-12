@@ -9,13 +9,13 @@ from spyne.server.wsgi import WsgiApplication
 
 
 class Time(ServiceBase):
-
+    # funcion para obtener la fecha y hora
     @rpc(_returns=Iterable(Unicode))
     def get_date_time(ctx):
         time = strftime("%d/%m/%Y %X", gmtime())
         return time
 
-
+# reacion de la aplicacion usando soap
 application = Application(
     services=[Time],
     tns='http://tests.python-zeep.org/',
@@ -31,20 +31,20 @@ if __name__ == '__main__':
     import logging
 
     from wsgiref.simple_server import make_server
-    
+    # comprobar los parametros de entrada
     parser = argparse.ArgumentParser(description='Optional app description')
     parser.add_argument('-p', type=int, required=True, help='Server Port')
     args = parser.parse_args()
     if ((args.p < 1024) or (args.p > 65535)):
         parser.error("Error: Port must be in the range 1024 <= port <= 65535")
         
-
+    # creacion del 
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
-
+    # dar los parametros usando el puerto pasado de argumento
     logging.info(f"listening to http://127.0.0.1:{args.p}")
     logging.info(f"wsdl is at: http://localhost:{args.p}/?wsdl")
-
+    # crear el servidor
     server = make_server('127.0.0.1', args.p, application)
     try:
         server.serve_forever()

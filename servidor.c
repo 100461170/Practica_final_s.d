@@ -81,14 +81,28 @@ int main (int argc, char *argv[]){
         perror("SERVER: Error en serverSocket");
         return 0;
     }
-    // Obtenemos el host e imprimimos el mensaje e inicialización del servidor
-    char machine[MAX_STR];
-    int err = gethostname(machine, MAX_STR);
+    // obtener el IP local
+    char hostbuffer[MAX_STR];
+    char *IPbuffer;
+    struct hostent *host_entry;
+    int err;
+    // To retrieve hostname
+    err = gethostname(hostbuffer, sizeof(hostbuffer));
     if (err == -1){
         fprintf(stderr, "Error: no se pudo obtener el nombre del host.\n");
         return -1;
     }
-    printf("init server %s:%d\n", machine, port_number);
+    // To retrieve host information
+    host_entry = gethostbyname(hostbuffer);
+    if (hostentry == NULL){
+        fprintf(stderr, "Error: no se pudo optener inforkacion del host.\n");
+        return -1;
+    }
+    // conseguir el IP    
+    IPbuffer = inet_ntoa(*((struct in_addr *)
+                               host_entry->h_addr_list[0]));
+
+    printf("init server %s:%d\n", IPbuffer, port_number);
     // Bucle infinito para tratar peticiones de los clientes
     while (1) {
         // Aceptar un cliente
@@ -248,6 +262,8 @@ int s_register(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", username);
     strcpy(op_log->username, username);
     // Comprobamos si el usuario ya está registrado iterando en el almacén
     // Si no lo está devolvemos 1
@@ -289,6 +305,8 @@ int s_unregister(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", username);
     strcpy(op_log->username, username);
     // Miramos si el usuario está registrado
     for (int i = 0; i < n_elementos; i++){
@@ -334,6 +352,8 @@ int s_connect(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", username);
     strcpy(op_log->username, username);
     // obtener puerto del cliente
     char puerto_str[MAX_STR];
@@ -397,6 +417,8 @@ int s_publish(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", username);
     // obtener el nombre del archivo que quiere publicar el cliente
     char filename[MAX_STR];
     ret = readLine(sc_local, filename, sizeof(char) * MAX_STR);
@@ -468,6 +490,8 @@ int s_delete(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", username);
     // obtener nombre del archivo
     char filename[MAX_STR];
     ret = readLine(sc_local, filename, sizeof(char) * MAX_STR);
@@ -542,6 +566,8 @@ int s_list_users(int sc_local){
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", username);
     // comprobar si hay clientes registrados en el sistema
     int hay_clientes = 1;
     if (n_elementos == 0){
@@ -657,6 +683,8 @@ int s_list_content(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 4;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", operating_user);
     // recibimos el nombre de usuario cuyo contenido queremos conocer
     char username[MAX_STR];
     ret = readLine(sc_local, username, sizeof(char) * MAX_STR);
@@ -772,6 +800,8 @@ int s_disconnect(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 3;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", username);
     strcpy(op_log->username, username);
     // comprobar si existe el usuario
     int existe = 1;         // valor a devolver en el caso de que no existiese
@@ -813,6 +843,8 @@ int s_get_file(int sc_local, operation_log *op_log){
         pthread_mutex_unlock(&almacen_mutex);
         return 2;
     }
+    // imprimir mensaje de operacion
+    printf("operation from %s.\n", client_name);
     // copiar el usuario a la estructura de log de operaciones
     strcpy(op_log->username, client_name);
     // obtener el nombre del fichero remoto
