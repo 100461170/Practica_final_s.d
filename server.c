@@ -573,7 +573,7 @@ int s_list_users(int sc_local, operation_log *op_log){
     // comprobar si hay clientes registrados en el sistema
     int existe_usuario = 1;
     for (int i = 0; i < n_elementos; i++){
-        if (strcmp(almacen->cliente, username) == 0){
+        if (strcmp(almacen[i].cliente, username) == 0){
             existe_usuario = 0;
         }
     }
