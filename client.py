@@ -32,7 +32,16 @@ class client :
 
 
     @staticmethod
-    def  register(user) :
+    def  register(user):
+        """
+        La funcion register permite a un usuario registrarse en el sistema
+        Args:
+            user: nombre de usuario
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario ya esta registrado
+            - 2 en caso de error
+        """
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
@@ -44,7 +53,7 @@ class client :
         client.send_message(time_date, client._socket_client)        
         # mandar el usuario
         client.send_message(user, client._socket_client)     
-        # recibir la respuesta
+        # recibir la respuesta del servidor
         message = int(client.readString(client._socket_client))
         if message == 0:
             print("c> REGISTER OK")
@@ -59,6 +68,15 @@ class client :
 
     @staticmethod
     def  unregister(user) :
+        """
+        La funcion unregister permite a un usuario cancelar su registro en el sistema
+        Args:
+            user: nombre de usuario
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no esta registrado
+            - 2 en caso de error
+        """
         # obtener el tiempo de la operacion
         wsdl_url = f"http://localhost:{client._web_port}/?wsdl"
         soap = zeep.Client(wsdl=wsdl_url) 
@@ -82,10 +100,18 @@ class client :
             print("c> UNREGISTER FAIL")
             return client.RC.ERROR
 
-
     
     @staticmethod
     def  connect(user) :
+        """
+        La funcion connect permite a un usuario conectarse al sistema
+        Args:
+            user: nombre de usuario
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe o ya esta conectado
+            - 2 en caso de error
+        """
         # comprobar si usuario esta conectado
         if client._username != None:
             print("c> CLIENT ALREADY CONNECTED")
@@ -95,12 +121,12 @@ class client :
         soap = zeep.Client(wsdl=wsdl_url) 
         time_date = soap.service.get_date_time()
         time_date = ''.join(time_date)
-        # crear una tupla ip, puerto 0-> usar puerto libre 
+        # crear una tupla ip, puerto, al pasar 0 como parametro se usara un puerto libre 
         connect_addr = (client._server, 0)
-        # crear socket
+        # Se crea el socket necesario para las transferencias de archivos entre clientes
         client._socket_connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client._socket_connect.bind(connect_addr)
-        # crear hilo
+        # crear un hilo para escuchar las peticiones de otros clientes
         ip, port = client._socket_connect.getsockname()
         client._thread = threading.Thread(target=client.listen)
         # mandar codigo de operacion
@@ -116,6 +142,7 @@ class client :
         message = int(client.readString(client._socket_client))
         if message == 0:
             print("c> CONNECT OK")
+            # Si todo ha ido bien se arranca el hilo de escucha
             client._username = username
             client._thread.start()
             return client.RC.OK
@@ -133,7 +160,18 @@ class client :
     
     @staticmethod
     def  disconnect(user) :
-        # comprobar si el usuario es el de esta sesion
+        """
+        La funcion disconnect permite a un usuario desonectarse al sistema
+        Args:
+            user: nombre de usuario
+        Returns:
+            - 0 si todo es correcto
+            - 1 si el usuario no existe o no esta conectado
+            - 2 en caso de error
+        """
+        # comprobar si el cliente de esta sesion esta conectado al sistema. Si ya lo esta
+        # no se permitira una nueva conexion, ya que solo puede haber un usuario conectado
+        # por terminal
         if user != client._username:
             print("c> DISCONNECT FAIL / USER NOT CONNECTED")
             return client.RC.USER_ERROR    
@@ -151,9 +189,11 @@ class client :
         # recibir la respuesta
         message = int(client.readString(client._socket_client))
         if message == 0:
-            # obtener IP y addr de socket connect y mandar mensaje de desconexion
+            # obtener IP y addr del socket para la transferencia de archivos
             ip, port = client._socket_connect.getsockname()
+            # se crea un socket para cerrar el hilo
             disconnect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Se manda un mensaje de desconexion al hilo de escucha
             disconnect_socket.connect((ip, port))
             client.send_message("end", disconnect_socket)
             client._thread.join()
