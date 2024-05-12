@@ -1,0 +1,10 @@
+list_users
+register user1
+register user2
+list_users
+connect user1
+list_users
+disconnect user1
+unregister user1
+unregister user2
+quit

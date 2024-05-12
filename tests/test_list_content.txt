@@ -1,0 +1,16 @@
+list_content user1
+register user1
+list_content user1
+connect user1
+list_content user2
+publish file1 descr1
+publish file2 descr2
+list_content user1
+disconnect user1
+register user2
+connect user2
+list_content user1
+disconnect user2
+unregister user1
+unregister user2
+quit
