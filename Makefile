@@ -13,8 +13,8 @@ SOURCES_SVC.h =
 SOURCES.x = 
 
 TARGETS_SVC.c = operaciones_svc.c operaciones_server.c operaciones_xdr.c 
-TARGETS_CLNT.c = operaciones_clnt.c communications.c servidor.c operaciones_xdr.c 
-TARGETS = operaciones.h operaciones_xdr.c operaciones_clnt.c operaciones_svc.c servidor.c operaciones_server.c
+TARGETS_CLNT.c = operaciones_clnt.c communications.c server.c operaciones_xdr.c 
+TARGETS = operaciones.h operaciones_xdr.c operaciones_clnt.c operaciones_svc.c server.c operaciones_server.c
 
 OBJECTS_CLNT = $(SOURCES_CLNT.c:%.c=%.o) $(TARGETS_CLNT.c:%.c=%.o)
 OBJECTS_SVC = $(SOURCES_SVC.c:%.c=%.o) $(TARGETS_SVC.c:%.c=%.o)
