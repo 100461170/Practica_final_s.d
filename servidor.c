@@ -94,7 +94,7 @@ int main (int argc, char *argv[]){
     }
     // To retrieve host information
     host_entry = gethostbyname(hostbuffer);
-    if (hostentry == NULL){
+    if (host_entry == NULL){
         fprintf(stderr, "Error: no se pudo optener inforkacion del host.\n");
         return -1;
     }
