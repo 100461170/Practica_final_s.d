@@ -1,6 +1,7 @@
 Compilación y ejecución del sistema
     Pasos previos en Python
         Antes de ejecutar se debe seguir estos pasos para que la parte relativa a python funcione:
+            -   Hacer: cd $ cd ssdd_p2_100461170_100472173
             -   Crear un “virtual environment” llamado venv usando el comando: $ python3 -m venv venv
             -   Activar el venv usando el comando: $ source venv/bin/activate
             -   Instalar todos los requisitos del sistema usando: $ pip install -r requirements.txt
@@ -9,7 +10,7 @@ Compilación y ejecución del sistema
     Guía de compilación y ejecución del sistema
     Una vez que se hayan realizado los pasos previos se puede seguir con estos pasos para ejecutar una sesión. Esta es la forma más cómoda de ejecutar el servicio.
         -   Abrir cuatro terminales
-        -   En todas las terminales hacer cd TODO: completar esto con el path del directorio.
+        -   En todas las terminales hacer cd $ cd ssdd_p2_100461170_100472173
 
         -   La primera terminal tendrá el servidor del cliente. Se deber usar: 
             -   $ make
